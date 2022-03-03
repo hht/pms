@@ -1,0 +1,23 @@
+@import "~antd/dist/antd.css";
+@import "@ant-design/pro-form/dist/form.css";
+@import "@ant-design/pro-table/dist/table.css";
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root > .ant-layout {
+  min-height: 100vh;
+}
+
+.logo {
+  float: left;
+  width: 120px;
+  margin: 0 24px 0 0;
+  color: #fff;
+}

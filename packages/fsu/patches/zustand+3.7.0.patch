@@ -1,0 +1,30 @@
+diff --git a/node_modules/zustand/.DS_Store b/node_modules/zustand/.DS_Store
+new file mode 100644
+index 0000000..def770a
+Binary files /dev/null and b/node_modules/zustand/.DS_Store differ
+diff --git a/node_modules/zustand/esm/vanilla.js b/node_modules/zustand/esm/vanilla.js
+index ea760b2..56d52ac 100644
+--- a/node_modules/zustand/esm/vanilla.js
++++ b/node_modules/zustand/esm/vanilla.js
+@@ -11,7 +11,7 @@ function createStore(createState) {
+   };
+   const getState = () => state;
+   const subscribeWithSelector = (listener, selector = getState, equalityFn = Object.is) => {
+-    console.warn("[DEPRECATED] Please use `subscribeWithSelector` middleware");
++    //console.warn("[DEPRECATED] Please use `subscribeWithSelector` middleware");
+     let currentSlice = selector(state);
+     function listenerToAdd() {
+       const nextSlice = selector(state);
+diff --git a/node_modules/zustand/vanilla.js b/node_modules/zustand/vanilla.js
+index 1cdf6e9..baf0a69 100644
+--- a/node_modules/zustand/vanilla.js
++++ b/node_modules/zustand/vanilla.js
+@@ -31,7 +31,7 @@ function createStore(createState) {
+       equalityFn = Object.is;
+     }
+ 
+-    console.warn('[DEPRECATED] Please use `subscribeWithSelector` middleware');
++    //console.warn('[DEPRECATED] Please use `subscribeWithSelector` middleware');
+     var currentSlice = selector(state);
+ 
+     function listenerToAdd() {

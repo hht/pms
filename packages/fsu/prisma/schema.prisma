@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../database/pms.db"
+}
+
+model Unit {
+  id          Int       @id @default(autoincrement())
+  userName    String    @unique
+  password    String
+  unitId      String
+  resourceId  String
+  ipAddress   String
+  port        Int
+  vendor      String
+  model       String
+  version     String
+  unitVersion String
+  interval    Int       @default(60)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  reportedAt  DateTime?
+
+  devices Device[]
+
+}
+
+model Alarm {
+  id          Int      @id @default(autoincrement())
+  signal      String
+  value       String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)
+}
+
+model Device {
+  id Int @id @default(autoincrement())
+
+  deviceId       String   @unique
+  resourceId     String   @unique
+  name           String
+  vendor         String   @default("")
+  model          String
+  productionAt   DateTime @default(now())
+  controllerType String   @default("")
+  version        String   @default("")
+  batch          String   @default("")
+
+  port     String  @unique
+  active   Boolean @default(true)
+  baudRate Int     @default(9600)
+  timeout  Int     @default(3000)
+
+  Unit    Unit?    @relation(fields: [unitId], references: [id])
+  unitId  Int?
+  signals Signal[]
+}
+
+model Signal {
+  id Int @id @default(autoincrement())
+
+  name             String
+  category         String
+  type             String   @default("模拟量")
+  value            String
+  unit             String
+  description      String
+  upperMinorLimit  Float?
+  upperMajorLimit  Float?
+  lowerMinorLimit  Float?
+  lowerMajorLimit  Float?
+  threshold        Float?
+  ThresholdPercent Float?
+  startDelay       Int?
+  endDelay         Int?
+  active           Boolean  @default(true)
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  command          String?
+  offset           Int
+  length           Int
+
+  device   Device @relation(fields: [deviceId], references: [id])
+  deviceId Int
+}
+
+model History {
+  id          Int      @id @default(autoincrement())
+  point       String
+  value       String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
