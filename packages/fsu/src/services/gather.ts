@@ -78,20 +78,19 @@ const getDeviceValue = (device: Device, command: Command) => {
         encoding: "hex",
       });
       const response = await _.attempt(
-        command.validate,
+        command.parser,
         useBufferStore.getState()[device.port]
       );
       // 如果数据校验不通过则报错
       if (_.isError(response) || _.isNull(response)) {
         reject(response);
       }
-      const values = command.parse(response as Buffer);
       // 清空数据缓冲区
       useBufferStore.setState({ [device.port]: Buffer.alloc(0) });
-      resolve({ name: command.name, values: values, response });
+      resolve({ name: command.name, values: response, response });
     }, 2000 + device.timeout * 1000);
     // 发送命令
-    port?.write(command.process(command.input));
+    port?.write(command.preprocessor(command.command));
   });
 };
 
@@ -130,7 +129,7 @@ const getDeviceValues = async (device: Device) => {
   // 获取设备所有命令
   const commands =
     PROTOCOLS.find(
-      (it) => it.manufacturer === device.vendor && it.model === device.model
+      (it) => it.vendor === device.vendor && it.model === device.model
     )?.commands ?? [];
   // 根据设备命令获取设备实时数据
 

@@ -39,10 +39,10 @@ export const getProtocols = async () => {
   return _.chain(PROTOCOLS)
     .map((it) => ({
       id: it.id,
-      manufacturer: it.manufacturer,
+      manufacturer: it.vendor,
       name: it.name,
       model: it.model,
-      command: it.commands[0].input.valueOf(),
+      command: it.commands[0].command,
     }))
     .groupBy("manufacturer")
     .value();

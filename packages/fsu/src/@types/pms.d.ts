@@ -72,22 +72,58 @@ interface Message {
 }
 
 interface Command {
-  input: Buffer;
   name: string;
-  process: (Buffer) => Buffer;
-  parse: (input: Buffer) => { name: string; value: numbuer | string }[];
-  validate: (response: Buffer) => Buffer | null;
+  command: Buffer;
+  preprocessor: (input: Buffer) => Buffer;
+  parser: (input: Buffer, options: Signal[][]) => Signal[];
+  options: Signal[][];
 }
 interface Protocol {
   id: string;
   name: string;
   model: string;
+  type: string;
   commands: Command[];
-  manufacturer: string;
+  vendor: string;
+  rtn?: {
+    [key: string]: string;
+  };
 }
 
 interface Value {
   name: string;
   value: "B" | "F" | "I";
   skip?: (value: number) => number;
+}
+
+interface Signal {
+  name: string;
+  unit: string;
+  length: number;
+  prefix: string;
+  lowerMinorLimit?: number;
+  lowerMajorLimit?: number;
+  upperMinorLimit?: number;
+  upperMajorLimit?: number;
+  value?: string | number;
+  normalValue?: string | number;
+  enum?: {
+    [key: number]: string | number;
+  };
+}
+interface Component {
+  name: string;
+  description: string;
+  components: {
+    [key: string]: {
+      默认: Signal[];
+    };
+  };
+}
+
+interface Template {
+  name: string;
+  description: string;
+  protocol: string;
+  components: { [key: string]: Signal[][] };
 }

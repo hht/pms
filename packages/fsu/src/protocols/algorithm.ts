@@ -3,7 +3,7 @@
  */
 import { DeviceError } from "../utils/errors";
 import _ from "lodash";
-import { ACDistribution } from "./templates";
+import { RTN } from "./enum";
 
 /**
  * CRC16校验算法
@@ -56,20 +56,13 @@ export const checkCrc16 = (input: Buffer) => {
   return Buffer.from(data);
 };
 
-/**
- * 使用8位长度加上16位整数读取数据
- * @param lengthOffset 长度位移
- * @returns
- */
-export const getInt16BEArrayWith8BitLength =
-  (lengthOffset: number) => (input: Buffer) => {
-    const values = [];
-    const length = input.readInt8(lengthOffset);
-    for (let i = 0; i < length; i += 2) {
-      values.push(input.readInt16BE(i + lengthOffset + 1));
-    }
-    return values;
-  };
+export const ACDistribution: Value[] = [
+  { name: "输入线/相电压AB/A", value: "F" },
+  { name: "输入线/相电压AB/A", value: "F" },
+  { name: "输入线/相电压AB/A", value: "F" },
+  { name: "输入频率", value: "F" },
+  { name: "用户自定义数据", value: "B", skip: (value: number) => value },
+];
 
 /**
  * 分解电总协议长度数据
@@ -94,56 +87,19 @@ export const getYDT1363LengthChecksum = (input: Buffer, offset: number) => {
 };
 
 /**
- * 生成电总协议长度校验值
- * @param input 数据
- * @param offset 长度数据位移
- * @returns 返回填充了LCHECKSUM的Buffer
+ * 生成符合YDT1363标准的命令
+ * @param input 原始数据
+ * @returns 组装后的数据
  */
-export const appendYDT1363LengthByte =
-  (offset = 0) =>
-  (input: Buffer) => {
-    const [checksum] = getYDT1363LengthChecksum(input, offset);
-    input.write(`${checksum.toString(16).toUpperCase()}`, offset);
-    return input;
-  };
-
-/**
- * 电总协议长度位校验
- * @param input 数据
- * @param offset 长度数据位移
- * @returns 返回去除命令及长度信息的纯数据
- */
-export const checkLengthBytes =
-  (offset = 0) =>
-  (input: Buffer) => {
-    const [checksum, v0, length] = getYDT1363LengthChecksum(input, offset);
-    if (checksum !== v0) {
-      throw new DeviceError({ message: "电总协议长度位校验错误", data: input });
-    }
-    return input.subarray(-length);
-  };
-
-/**
- * 去除DATAFLAG
- * @param input 数据
- * @returns
- */
-export const removeYDY1363Divider = (input: Buffer) => input.subarray(2);
-
-/**
- * 生成并填充电总协议校验值
- * @param input 数据
- * @param offset
- * @returns 返回填充校验值的数据Buffer
- */
-export const appendYDT1363Bytes = (input: Buffer) => {
+export const assembleCommandOfYDT = (input: Buffer) => {
+  const [checksum] = getYDT1363LengthChecksum(input, 8);
+  input.write(`${checksum.toString(16).toUpperCase()}`, 8);
   const sum = [...input.valueOf()].reduce((prev, curr) => prev + curr, 0);
-  const checksum = (~sum + 1) & 0xffff;
-  const buffer = Buffer.concat([
+  return Buffer.concat([
     Buffer.from([0x7e]),
     input,
     Buffer.from(
-      checksum
+      ((~sum + 1) & 0xffff)
         .toString(16)
         .toUpperCase()
         .split("")
@@ -151,54 +107,22 @@ export const appendYDT1363Bytes = (input: Buffer) => {
     ),
     Buffer.from("\r"),
   ]);
-  return buffer;
 };
 
-/**
- * 电总协议开关电源返回RTN码
- * @param input 返回数据
- * @returns
- */
-
-const checkYDT1363RTN = (code: number, data: Buffer) => {
-  switch (code) {
-    case 0x0:
-      return true;
-    case 0x1:
-      throw new DeviceError({ message: "协议版本错", data });
-    case 0x2:
-      throw new DeviceError({ message: "CHKSUM错", data });
-    case 0x3:
-      throw new DeviceError({ message: "LCHKSUM错", data });
-    case 0x4:
-      throw new DeviceError({ message: "CID2无效", data });
-    case 0x5:
-      throw new DeviceError({ message: "命令格式错", data });
-    case 0x6:
-      throw new DeviceError({ message: "无效数据", data });
-    case 0xe0:
-      throw new DeviceError({ message: "无效权限", data });
-    case 0xe1:
-      throw new DeviceError({ message: "操作失败", data });
-    case 0xe2:
-      throw new DeviceError({ message: "设备故障", data });
-    case 0xe3:
-      throw new DeviceError({ message: "设备写保护", data });
-    default:
-      return true;
-  }
-};
 /**
  * 电总协议数据校验
  * @param input 数据
+ * @param divider 是否有DATAFLAG
+ * @param rtn 返回的数据
  * @returns 返回去除首位标识和校验位的数据
  */
-export const checkYDT1363Bytes = (input: Buffer) => {
+export const getPayloadForYDT = (input: Buffer, divider = true) => {
+  // 匹配符合首尾标识的数据
   const response = /.*\~([^\~\r]*)\r.*/.exec(input.toString())?.[1];
   if (!response) {
     throw new DeviceError({ message: "电总协议数据格式错误", data: input });
   }
-  checkYDT1363RTN(parseInt(response.substring(6, 8), 16), input);
+  // 数据校验和
   const checksum = parseInt(`0x${response.substring(response.length - 4)}`, 16);
   const data = Buffer.from(response).subarray(0, -4).valueOf();
   const sum = _.chain(data)
@@ -207,7 +131,95 @@ export const checkYDT1363Bytes = (input: Buffer) => {
   if (checksum !== ((~sum + 1) & 0xffff)) {
     throw new DeviceError({ message: "电总协议数据校验错误", data: input });
   }
-  return Buffer.from(data);
+  // RTN
+  if (parseInt(response.substring(6, 8), 16) !== 0) {
+    throw new DeviceError({
+      message:
+        RTN[parseInt(response.substring(6, 8), 16)] ??
+        `厂家自定义错误${response.substring(6, 8)}`,
+      data: input,
+    });
+  }
+  // 长度校验和
+  const [lcheck, v0, length] = getYDT1363LengthChecksum(input, 9);
+  if (lcheck !== v0) {
+    throw new DeviceError({ message: "电总协议长度位校验错误", data: input });
+  }
+  // 返回有效负荷
+  return Buffer.from(
+    _.chain(data.subarray(-length).subarray(divider ? 2 : 0))
+      .split("")
+      .chunk(2)
+      .map(([h, l]) => parseInt(`${h}${l}`, 16))
+      .value()
+  );
+};
+
+// ------------------
+
+/**
+ * 电总交流屏模拟量
+ * @param input 数据
+ * @param options 参数
+ */
+export const parseAlternatingValuesOfYDT = (
+  input: Buffer,
+  options: Signal[][]
+) => {
+  const data = getPayloadForYDT(input, true);
+  let offset = 0;
+  const response = [];
+  const screenCount = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < screenCount; i++) {
+    const forkCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < forkCount; j++) {
+      for (const signal of options[0]) {
+        response.push({
+          ...signal,
+          name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+          raw: data.readFloatLE(offset),
+          prefix: `${signal.prefix}${_.padStart(
+            `${i * forkCount + j + 1}`,
+            3,
+            "0"
+          )}`,
+        });
+        offset += signal.length;
+      }
+      const customCount = data.readUInt8(offset);
+      offset += 1;
+      for (let k = 0; k < customCount; k++) {
+        for (const signal of options[1]) {
+          response.push({
+            ...signal,
+            name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
+            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+            raw: data.readFloatLE(offset),
+            prefix: `${signal.prefix}${_.padStart(
+              `${i * forkCount + j * customCount + k + 1}`,
+              3,
+              "0"
+            )}`,
+          });
+          offset += signal.length;
+        }
+      }
+    }
+    for (const signal of options[2]) {
+      response.push({
+        ...signal,
+        name: `交流屏#${i + 1}${signal.name}`,
+        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+        raw: data.readFloatLE(offset),
+        prefix: `${signal.prefix}${_.padStart(`${i + 1}`, 3, "0")}`,
+      });
+      offset += signal.length;
+    }
+  }
+  return response;
 };
 
 /**
@@ -215,16 +227,10 @@ export const checkYDT1363Bytes = (input: Buffer) => {
  * @param input 数据
  * @returns
  */
-export const getACDistributionValues = (input: Buffer, template: Value[]) => {
-  const converted = Buffer.from(
-    _.chain(input.toString())
-      .split("")
-      .chunk(2)
-      .map(([h, l]) => parseInt(`${h}${l}`, 16))
-      .value()
-  );
+export const getACDistributionValues = (input: Buffer) => {
   let offset = 0;
   const response = [];
+  const converted = input;
   const maxScreens = converted.readInt8(offset);
   offset += 1;
   for (let i = 0; i < maxScreens; i++) {

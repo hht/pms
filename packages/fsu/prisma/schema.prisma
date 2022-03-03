@@ -71,6 +71,7 @@ model Signal {
   category         String
   type             String   @default("模拟量")
   value            String
+  normalValue      String?
   unit             String
   description      String
   upperMinorLimit  Float?
