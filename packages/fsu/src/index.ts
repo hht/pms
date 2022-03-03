@@ -8,15 +8,12 @@ import { ExpressErrorHandler } from "./utils";
 import { getDeviceRoutes } from "./routes";
 import { scheduleCron } from "./services/gather";
 import { GLOBAL_INTERVAL } from "./protocols";
-import {
-  getACDistributionValues,
-  parseAlternatingValuesOfYDT,
-} from "./protocols/algorithm";
 import * as soap from "soap";
 import fs from "fs";
-import { VERTIVE_PSMA } from "./protocols/templates";
+import { getTemplate } from "./templates/YDT";
+import { DIRECT_VOLTAGE } from "./templates/signals";
 export const app = express();
-
+import protocols from "./protocols/Vertiv";
 // app.use(cors());
 // app.use(bodyParser.json());
 
@@ -33,15 +30,22 @@ export const app = express();
 // });
 
 const response = Buffer.from(
-  fs.readFileSync("./emulation/电总交流屏模拟量/PSM-A多屏", {
+  fs.readFileSync("./emulation/电总直流屏参数/PSM-A", {
     encoding: "utf8",
   })
 );
-console.log(response.toString());
 
-console.log(
-  parseAlternatingValuesOfYDT(response, VERTIVE_PSMA.components["交流屏模拟量"])
-);
+console.log("-----");
+
+const command = protocols[protocols.length - 1].commands[8];
+try {
+  const data = command.parser(getTemplate(command.name, command.options))(
+    response
+  );
+  console.log(_.keyBy(data, "id"));
+} catch (e: any) {
+  console.log("出错啦", e.message);
+}
 
 // soap测试
 // const endpoint =

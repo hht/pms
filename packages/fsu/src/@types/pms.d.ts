@@ -75,8 +75,10 @@ interface Command {
   name: string;
   command: Buffer;
   preprocessor: (input: Buffer) => Buffer;
-  parser: (input: Buffer, options: Signal[][]) => Signal[];
-  options: Signal[][];
+  parser: (options: Signal[][]) => (input: Buffer) => Signal[];
+  options: {
+    [key: string]: Signal[];
+  };
 }
 interface Protocol {
   id: string;
@@ -97,14 +99,14 @@ interface Value {
 }
 
 interface Signal {
+  id: string;
   name: string;
-  unit: string;
   length: number;
-  prefix: string;
   lowerMinorLimit?: number;
   lowerMajorLimit?: number;
   upperMinorLimit?: number;
   upperMajorLimit?: number;
+  unit?: string;
   value?: string | number;
   normalValue?: string | number;
   enum?: {
