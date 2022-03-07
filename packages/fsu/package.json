@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "tsc": "tsc --watch",
-    "start": "nodemon dist/index.js"
+    "start": "nodemon --ignore ./database/ dist/index.js"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",
@@ -28,10 +28,14 @@
     "cors": "^2.8.5",
     "dayjs": "^1.10.8",
     "express": "^4.17.3",
+    "fast-xml-parser": "^4.0.5",
     "fs": "^0.0.1-security",
+    "lowdb": "github:dankreiger/lowdb#chore/esm-cjs-hybrid-WITH-LIB",
     "node-schedule": "^2.1.0",
     "os-utils": "^0.0.14",
     "patch-package": "^6.4.7",
+    "rxdb": "^11.6.0",
+    "rxjs": "^7.5.4",
     "serialport": "^10.3.0",
     "soap": "^0.43.0",
     "socket.io": "^4.4.1",

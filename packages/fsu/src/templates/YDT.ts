@@ -2,10 +2,8 @@ import _ from "lodash";
 import {
   ALTERNATING_ALARM_STATE,
   ALTERNATING_BREAKER_STATE,
-  ALTERNATING_CUSTOM_STATE,
   CHARGING_STATE,
   COMMON_STATE,
-  COMMUNICATION_STATE,
   POWER_STATE,
   THROTTLING_STATE,
 } from "../algorithm/enum";
@@ -30,37 +28,37 @@ const Template: {
     [
       {
         ...ALTERNATING_VOLTAGE,
-        name: "输入线/相电压AB/A",
-        id: "401110100",
+        name: "输入电压A",
+        id: "4011101",
       },
       {
         ...ALTERNATING_VOLTAGE,
-        name: "输入线/相电压BC/B",
-        id: "401110200",
+        name: "输入电压B",
+        id: "4011102",
       },
       {
         ...ALTERNATING_VOLTAGE,
-        name: "输入线/相电压CA/C",
-        id: "401110300",
+        name: "输入电压C",
+        id: "4011103",
       },
-      { ...ALTERNATING_FREQUENCY, name: "输入频率", id: "401113900" },
+      { ...ALTERNATING_FREQUENCY, name: "输入频率", id: "4011139" },
     ],
     "用户自定义数据",
     [
       {
         ...ALTERNATING_CURRENT,
         name: "输出电流A",
-        id: "401111500",
+        id: "4011115",
       },
       {
         ...ALTERNATING_CURRENT,
         name: "输出电流B",
-        id: "401111600",
+        id: "4011116",
       },
       {
         ...ALTERNATING_CURRENT,
         name: "输出电流C",
-        id: "401111700",
+        id: "4011117",
       },
     ],
   ],
@@ -73,9 +71,8 @@ const Template: {
     [
       {
         name: "空开状态",
-        unit: "",
         length: 1,
-        id: "401300100",
+        id: "4013001",
         enum: ALTERNATING_BREAKER_STATE,
         normalValue: 0x00,
       },
@@ -92,30 +89,26 @@ const Template: {
   交流屏告警量: [
     [
       {
-        name: "输入线/相电压AB/A",
-        id: "401110100",
-        unit: "",
+        name: "输入电压A",
+        id: "4011101",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        name: "输入线/相电压BC/B",
-        id: "401110200",
-        unit: "",
+        name: "输入电压B",
+        id: "4011102",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        name: "输入线/相电压CA/C",
-        id: "401110300",
-        unit: "",
+        name: "输入电压C",
+        id: "4011103",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
         name: "输入频率",
-        id: "401113900",
-        unit: "",
+        id: "4011139",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
@@ -123,8 +116,7 @@ const Template: {
     [
       {
         name: "融丝/开关",
-        id: "401114100",
-        unit: "",
+        id: "4011141",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
@@ -133,22 +125,19 @@ const Template: {
     [
       {
         name: "输出电流A",
-        id: "401111500",
-        unit: "",
+        id: "4011115",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
         name: "输出电流B",
-        id: "401111600",
-        unit: "",
+        id: "4011116",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
         name: "输出电流C",
-        id: "401111700",
-        unit: "",
+        id: "4011117",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
@@ -162,33 +151,33 @@ const Template: {
   交流屏参数: [
     [
       {
-        name: "交流输入线/相电压上限",
-        id: "401110100",
+        name: "输入电压上限",
+        id: "4011101",
         unit: "V",
         length: 4,
       },
       {
-        name: "交流输入线/相电压下限",
-        id: "401110200",
+        name: "输入电压下限",
+        id: "4011102",
         unit: "V",
         length: 4,
       },
       {
-        name: "交流输入电流上限",
-        id: "401110300",
+        name: "输入电流上限",
+        id: "4011103",
         unit: "A",
         length: 4,
       },
       {
         name: "频率上限",
-        id: "401113900",
+        id: "4011139",
         unit: "Hz",
         length: 4,
       },
       {
         name: "频率下限",
-        id: "401114100",
-        unit: "",
+        id: "4011141",
+        unit: "Hz",
         length: 4,
       },
     ],
@@ -204,15 +193,15 @@ const Template: {
     [
       {
         ...DIRECT_VOLTAGE,
-        name: "整流模块输出电压",
-        id: "401110100",
+        name: "输出电压",
+        id: "4011101",
       },
     ],
     [
       {
         ...DIRECT_CURRENT,
-        name: "整流模块输出电流",
-        id: "401110100",
+        name: "输出电流",
+        id: "4011101",
       },
     ],
     "用户自定义数据",
@@ -226,19 +215,19 @@ const Template: {
     [
       {
         name: "开机/关机状态",
-        id: "401110100",
+        id: "4011101",
         length: 1,
         enum: POWER_STATE,
       },
       {
         name: "限流/不限流状态",
-        id: "401110100",
+        id: "4011101",
         length: 1,
         enum: THROTTLING_STATE,
       },
       {
         name: "浮充/均充/测试状态",
-        id: "401110100",
+        id: "4011101",
         length: 1,
         enum: CHARGING_STATE,
       },
@@ -253,9 +242,9 @@ const Template: {
   整流模块告警量: [
     [
       {
-        name: "整流模块故障",
+        name: "状态",
         length: 1,
-        id: "401110100",
+        id: "4011101",
         enum: COMMON_STATE,
       },
     ],
@@ -266,11 +255,11 @@ const Template: {
    */
   直流屏模拟量: [
     [
-      { ...DIRECT_VOLTAGE, name: "直流输出电压" },
-      { ...DIRECT_CURRENT, name: "总负载电流" },
+      { ...DIRECT_VOLTAGE, name: "直流输出电压", id: "4011101" },
+      { ...DIRECT_CURRENT, name: "总负载电流", id: "4011101" },
     ],
-    [{ ...DIRECT_CURRENT, name: "电流" }],
-    [{ ...DIRECT_CURRENT, name: "电流" }],
+    [{ ...DIRECT_CURRENT, name: "电流", id: "4011101" }],
+    [{ ...DIRECT_CURRENT, name: "电流", id: "4011101" }],
     "用户自定义电池组数据",
     "用户自定义数据",
   ],
@@ -279,8 +268,8 @@ const Template: {
    */
   直流屏参数: [
     [
-      { ...DIRECT_VOLTAGE, name: "直流电压上限" },
-      { ...DIRECT_CURRENT, name: "直流电压下限" },
+      { ...DIRECT_VOLTAGE, name: "直流电压上限", id: "4011101" },
+      { ...DIRECT_CURRENT, name: "直流电压下限", id: "4011101" },
     ],
     "用户自定义数据",
   ],

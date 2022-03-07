@@ -104,12 +104,14 @@ export const getPayload = (input: Buffer, divider = true) => {
  * @param options 参数
  */
 export const parseAlternatingValues =
-  (options: Signal[][]) => (input: Buffer) => {
+  (multi = true) =>
+  (options: Signal[][]) =>
+  (input: Buffer) => {
     const data = getPayload(input);
     let offset = 0;
     const response = [];
-    const screenCount = data.readInt8(offset);
-    offset += 1;
+    const screenCount = multi ? data.readInt8(offset) : 1;
+    offset += multi ? 1 : 0;
     for (let i = 0; i < screenCount; i++) {
       const forkCount = data.readInt8(offset);
       offset += 1;
@@ -123,7 +125,7 @@ export const parseAlternatingValues =
             id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
             offset,
           });
-          offset += signal.length;
+          offset += 4;
         }
         const customCount = data.readUInt8(offset);
         offset += 1;
@@ -141,7 +143,7 @@ export const parseAlternatingValues =
               )}`,
               offset,
             });
-            offset += signal.length;
+            offset += 4;
           }
         }
       }
@@ -154,7 +156,7 @@ export const parseAlternatingValues =
           id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
-        offset += signal.length;
+        offset += 4;
       }
     }
     return response;
@@ -166,18 +168,20 @@ export const parseAlternatingValues =
  * @param options 参数
  */
 export const parseAlternatingStatus =
-  (options: Signal[][]) => (input: Buffer) => {
+  (multi = true) =>
+  (options: Signal[][]) =>
+  (input: Buffer) => {
     const data = getPayload(input);
     let offset = 0;
     const response = [];
-    const screenCount = data.readInt8(offset);
-    offset += 1;
+    const screenCount = multi ? data.readInt8(offset) : 1;
+    offset += multi ? 1 : 0;
     for (let i = 0; i < screenCount; i++) {
       const forkCount = data.readInt8(offset);
       offset += 1;
       for (let j = 0; j < forkCount; j++) {
         for (const signal of options[0]) {
-          const value = data.readInt8(offset);
+          const value = data.readUInt8(offset);
           response.push({
             ...signal,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
@@ -186,7 +190,7 @@ export const parseAlternatingStatus =
             id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
             offset,
           });
-          offset += signal.length;
+          offset += 1;
         }
       }
       const customCount = data.readUInt8(offset);
@@ -204,7 +208,7 @@ export const parseAlternatingStatus =
           id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
-        offset += signal.length;
+        offset += 1;
       }
     }
     return response;
@@ -216,12 +220,14 @@ export const parseAlternatingStatus =
  * @param options 参数
  */
 export const parseAlternatingAlarms =
-  (options: Signal[][]) => (input: Buffer) => {
+  (multi = true) =>
+  (options: Signal[][]) =>
+  (input: Buffer) => {
     const data = getPayload(input);
     let offset = 0;
     const response = [];
-    const screenCount = data.readInt8(offset);
-    offset += 1;
+    const screenCount = multi ? data.readInt8(offset) : 1;
+    offset += multi ? 1 : 0;
     for (let i = 0; i < screenCount; i++) {
       const forkCount = data.readInt8(offset);
       offset += 1;
@@ -236,7 +242,7 @@ export const parseAlternatingAlarms =
             id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
             offset,
           });
-          offset += signal.length;
+          offset += 1;
         }
         const switchCount = data.readUInt8(offset);
         offset += 1;
@@ -255,7 +261,7 @@ export const parseAlternatingAlarms =
               )}`,
               offset,
             });
-            offset += signal.length;
+            offset += 1;
           }
         }
         const customCount = data.readUInt8(offset);
@@ -273,7 +279,7 @@ export const parseAlternatingAlarms =
             id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
             offset,
           });
-          offset += signal.length;
+          offset += 1;
         }
       }
       for (const signal of options[3]) {
@@ -286,7 +292,7 @@ export const parseAlternatingAlarms =
           id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
-        offset += signal.length;
+        offset += 1;
       }
     }
     return response;
@@ -309,7 +315,7 @@ export const parseAlternatingParameters =
         raw: data.readFloatLE(offset),
         offset,
       });
-      offset += signal.length;
+      offset += 4;
     }
 
     const customCount = data.readInt8(offset);
@@ -324,6 +330,7 @@ export const parseAlternatingParameters =
           raw: data.readFloatLE(offset),
           offset,
         });
+        offset += 4;
       }
     }
     return response;
@@ -347,7 +354,7 @@ export const parseRectifierValues =
         raw: data.readFloatLE(offset),
         offset,
       });
-      offset += signal.length;
+      offset += 4;
     }
 
     const count = data.readInt8(offset);
@@ -361,7 +368,7 @@ export const parseRectifierValues =
           raw: data.readFloatLE(offset),
           offset,
         });
-        offset += signal.length;
+        offset += 4;
       }
       const customCount = data.readInt8(offset);
       offset += 1;
@@ -406,7 +413,7 @@ export const parseRectifierStatus =
           id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
-        offset += signal.length;
+        offset += 1;
       }
       const customCount = data.readInt8(offset);
       offset += 1;
@@ -423,7 +430,7 @@ export const parseRectifierStatus =
           id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
-        offset += signal.length;
+        offset += 1;
       }
     }
     return response;
@@ -478,58 +485,75 @@ export const parseRectifierAlarms =
  * @param options
  * @returns
  */
-export const parseDirectValues = (options: Signal[][]) => (input: Buffer) => {
-  const data = getPayload(input);
-  let offset = 0;
-  const response = [];
-  const screenCount = data.readInt8(offset);
-  offset += 1;
-  for (let i = 0; i < screenCount; i++) {
-    for (const signal of options[0]) {
-      response.push({
-        ...signal,
-        name: `直流屏#${i + 1}${signal.name}`,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-        raw: data.readFloatLE(offset),
-        offset,
-      });
-      offset += signal.length;
-    }
-    const groupCount = data.readInt8(offset);
-    offset += 1;
-    for (let j = 0; j < groupCount; j++) {
-      for (const signal of options[1]) {
+export const parseDirectValues =
+  (multi = true) =>
+  (options: Signal[][]) =>
+  (input: Buffer) => {
+    const data = getPayload(input);
+    let offset = 0;
+    const response = [];
+    const screenCount = multi ? data.readInt8(offset) : 1;
+    offset += multi ? 1 : 0;
+    for (let i = 0; i < screenCount; i++) {
+      for (const signal of options[0]) {
         response.push({
           ...signal,
-          name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+          name: `直流屏#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
           offset,
         });
-        offset += signal.length;
+        offset += 4;
       }
-    }
-    const forkCount = data.readInt8(offset);
-    offset += 1;
-    for (let j = 0; j < forkCount; j++) {
-      for (const signal of options[2]) {
+      const groupCount = data.readInt8(offset);
+      offset += 1;
+      for (let j = 0; j < groupCount; j++) {
+        for (const signal of options[1]) {
+          response.push({
+            ...signal,
+            name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+            raw: data.readFloatLE(offset),
+            offset,
+          });
+          offset += 4;
+        }
+      }
+      const forkCount = data.readInt8(offset);
+      offset += 1;
+      for (let j = 0; j < forkCount; j++) {
+        for (const signal of options[2]) {
+          response.push({
+            ...signal,
+            name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
+            value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
+            raw: data.readFloatLE(offset),
+            offset,
+          });
+          offset += 4;
+        }
+      }
+      const customCount = data.readInt8(offset);
+      offset += 1;
+      for (let j = 0; j < groupCount; j++) {
+        for (const [index, signal] of options[3].entries()) {
+          response.push({
+            ...signal,
+            name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+            raw: data.readFloatLE(offset),
+            offset,
+          });
+          offset += 4;
+        }
+      }
+      for (const [index, signal] of options[4].entries()) {
+        if (index > customCount - groupCount * options[3].length - 1) {
+          break;
+        }
         response.push({
           ...signal,
-          name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
-          raw: data.readFloatLE(offset),
-          offset,
-        });
-        offset += signal.length;
-      }
-    }
-    const customCount = data.readInt8(offset);
-    offset += 1;
-    for (let j = 0; j < groupCount; j++) {
-      for (const [index, signal] of options[3].entries()) {
-        response.push({
-          ...signal,
-          name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+          name: `直流屏#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
           offset,
@@ -537,23 +561,9 @@ export const parseDirectValues = (options: Signal[][]) => (input: Buffer) => {
         offset += 4;
       }
     }
-    for (const [index, signal] of options[4].entries()) {
-      if (index > customCount - groupCount * options[3].length - 1) {
-        break;
-      }
-      response.push({
-        ...signal,
-        name: `直流屏#${i + 1}${signal.name}`,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-        raw: data.readFloatLE(offset),
-        offset,
-      });
-      offset += 4;
-    }
-  }
-  console.log(data.length, offset);
-  return response;
-};
+    console.log(data.length, offset);
+    return response;
+  };
 
 /**
  * 直流屏参数
