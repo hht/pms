@@ -1,12 +1,12 @@
-import { useRequest as useFetch } from 'ahooks';
-import { Options, Service } from 'ahooks/lib/useRequest/src/types';
-import { message } from 'antd';
-import axios from 'axios';
+import { useRequest as useFetch } from "ahooks";
+import { Options, Service } from "ahooks/lib/useRequest/src/types";
+import { message } from "antd";
+import axios from "axios";
 
-import { baseURL } from '../config';
+import { baseURL } from "../config";
 
 axios.defaults.baseURL = baseURL;
-
+axios.defaults.timeout = 60 * 1000;
 axios.interceptors.response.use(
   (response) => {
     const { data } = response;

@@ -122,7 +122,11 @@ export const parseAlternatingValues =
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
             raw: data.readFloatLE(offset),
-            id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
+            id: `${signal.id}-${_.padStart(
+              `${i * forkCount + j + 1}`,
+              3,
+              "0"
+            )}`,
             offset,
           });
           offset += 4;
@@ -136,7 +140,7 @@ export const parseAlternatingValues =
               name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
               value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
               raw: data.readFloatLE(offset),
-              id: `${signal.id}${_.padStart(
+              id: `${signal.id}-${_.padStart(
                 `${i * forkCount + j * customCount + k + 1}`,
                 3,
                 "0"
@@ -153,7 +157,7 @@ export const parseAlternatingValues =
           name: `交流屏#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
-          id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 4;
@@ -187,7 +191,11 @@ export const parseAlternatingStatus =
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             value: signal.enum![value],
             raw: value,
-            id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
+            id: `${signal.id}-${_.padStart(
+              `${i * forkCount + j + 1}`,
+              3,
+              "0"
+            )}`,
             offset,
           });
           offset += 1;
@@ -205,7 +213,7 @@ export const parseAlternatingStatus =
           name: `交流屏#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
@@ -239,7 +247,11 @@ export const parseAlternatingAlarms =
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             value: signal.enum![value],
             raw: value,
-            id: `${signal.id}${_.padStart(`${i * forkCount + j + 1}`, 3, "0")}`,
+            id: `${signal.id}-${_.padStart(
+              `${i * forkCount + j + 1}`,
+              3,
+              "0"
+            )}`,
             offset,
           });
           offset += 1;
@@ -254,7 +266,7 @@ export const parseAlternatingAlarms =
               name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
               value: signal.enum![value],
               raw: value,
-              id: `${signal.id}${_.padStart(
+              id: `${signal.id}-${_.padStart(
                 `${i * forkCount + j * switchCount + k + 1}`,
                 3,
                 "0"
@@ -276,7 +288,7 @@ export const parseAlternatingAlarms =
             name: `交流屏#${i + 1}${signal.name}`,
             value: signal.enum![value],
             raw: value,
-            id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
+            id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
             offset,
           });
           offset += 1;
@@ -289,48 +301,10 @@ export const parseAlternatingAlarms =
           name: `交流屏#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
-      }
-    }
-    return response;
-  };
-
-/**
- * 获取交流屏参数设置
- * @param input 数据
- * @returns
- */
-export const parseAlternatingParameters =
-  (options: Signal[][]) => (input: Buffer) => {
-    const data = getPayload(input, false);
-    let offset = 0;
-    const response = [];
-    for (const signal of options[0]) {
-      response.push({
-        ...signal,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-        raw: data.readFloatLE(offset),
-        offset,
-      });
-      offset += 4;
-    }
-
-    const customCount = data.readInt8(offset);
-    for (let i = 0; i < customCount; i++) {
-      for (const [index, signal] of options[1].entries()) {
-        if (index > customCount - 1) {
-          break;
-        }
-        response.push({
-          ...signal,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-          raw: data.readFloatLE(offset),
-          offset,
-        });
-        offset += 4;
       }
     }
     return response;
@@ -350,6 +324,7 @@ export const parseRectifierValues =
       response.push({
         ...signal,
         name: signal.name,
+        id: `${signal.id}-001`,
         value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
         raw: data.readFloatLE(offset),
         offset,
@@ -363,6 +338,7 @@ export const parseRectifierValues =
       for (const signal of options[1]) {
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `整流模块#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
@@ -378,6 +354,7 @@ export const parseRectifierValues =
         }
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: signal.name,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
@@ -386,7 +363,6 @@ export const parseRectifierValues =
         offset += 4;
       }
     }
-    console.log(data.length, offset);
 
     return response;
   };
@@ -407,10 +383,10 @@ export const parseRectifierStatus =
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `整流模块#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
@@ -424,10 +400,10 @@ export const parseRectifierStatus =
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `整流模块#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
@@ -453,6 +429,7 @@ export const parseRectifierAlarms =
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `整流模块#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
@@ -469,6 +446,7 @@ export const parseRectifierAlarms =
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `整流模块#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
@@ -498,6 +476,7 @@ export const parseDirectValues =
       for (const signal of options[0]) {
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `直流屏#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
@@ -511,6 +490,11 @@ export const parseDirectValues =
         for (const signal of options[1]) {
           response.push({
             ...signal,
+            id: `${signal.id}-${_.padStart(
+              `${i * screenCount + j * groupCount + 1}`,
+              3,
+              "0"
+            )}`,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
             value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
             raw: data.readFloatLE(offset),
@@ -525,6 +509,11 @@ export const parseDirectValues =
         for (const signal of options[2]) {
           response.push({
             ...signal,
+            id: `${signal.id}-${_.padStart(
+              `${i * screenCount + j * forkCount + 1}`,
+              3,
+              "0"
+            )}`,
             name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
             value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
             raw: data.readFloatLE(offset),
@@ -539,6 +528,11 @@ export const parseDirectValues =
         for (const [index, signal] of options[3].entries()) {
           response.push({
             ...signal,
+            id: `${signal.id}-${_.padStart(
+              `${i * screenCount + j * groupCount + 1}`,
+              3,
+              "0"
+            )}`,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
             value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
             raw: data.readFloatLE(offset),
@@ -553,6 +547,7 @@ export const parseDirectValues =
         }
         response.push({
           ...signal,
+          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           name: `直流屏#${i + 1}${signal.name}`,
           value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
           raw: data.readFloatLE(offset),
@@ -560,43 +555,6 @@ export const parseDirectValues =
         });
         offset += 4;
       }
-    }
-    console.log(data.length, offset);
-    return response;
-  };
-
-/**
- * 直流屏参数
- * @param options
- * @returns
- */
-export const parseDirectParameters =
-  (options: Signal[][]) => (input: Buffer) => {
-    const data = getPayload(input, false);
-    let offset = 0;
-    const response = [];
-    for (const signal of options[0]) {
-      response.push({
-        ...signal,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-        raw: data.readFloatLE(offset),
-        offset,
-      });
-      offset += 4;
-    }
-    const customCount = data.readInt8(offset);
-    offset += 1;
-    for (const [index, signal] of options[1].entries()) {
-      if (index > customCount - 1) {
-        break;
-      }
-      response.push({
-        ...signal,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-        raw: data.readFloatLE(offset),
-        offset,
-      });
-      offset += 4;
     }
     console.log(data.length, offset);
     return response;

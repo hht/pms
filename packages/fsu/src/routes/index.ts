@@ -3,12 +3,15 @@ import { Express } from "express";
 import {
   deleteDevice,
   getDevices,
+  getSignals,
   getUnit,
   upsertDevice,
+  upsertUnit,
 } from "../services/devices";
 import { ExpressAsyncNext } from "../utils";
-import { getPorts, getProtocols } from "../services/system";
+import { getPorts, getCommands } from "../services/system";
 import { useDeviceStore } from "../store";
+import { getDeviceConfig } from "../services/gather";
 
 /**
  * 局站相关信息接口
@@ -20,12 +23,20 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const unit = await getUnit();
       const ports = await getPorts();
-      const protocols = await getProtocols();
+      const commands = await getCommands();
       res.json({
         unit,
         ports,
-        protocols,
+        commands,
       });
+    })
+  );
+
+  app.post(
+    "/unit",
+    ExpressAsyncNext(async (req, res) => {
+      const unit = await upsertUnit(req.body);
+      res.json(unit);
     })
   );
 
@@ -51,6 +62,26 @@ export const getDeviceRoutes = (app: Express) => {
       const { id } = req.params;
       const devices = await deleteDevice(parseInt(id));
       res.json(devices);
+    })
+  );
+
+  app.post(
+    "/signal",
+    ExpressAsyncNext(async (req, res) => {
+      const { device } = req.body;
+      const singals = await getSignals(parseInt(device));
+      res.json(singals);
+    })
+  );
+
+  app.post(
+    "/config",
+    ExpressAsyncNext(async (req, res) => {
+      const { device, commands } = req.body;
+      console.log(device, commands);
+      const response = await getDeviceConfig(device, commands);
+      console.log(response);
+      res.json(response);
     })
   );
 

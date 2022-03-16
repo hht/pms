@@ -1,10 +1,12 @@
 import { DIRECT_VOLTAGE } from "../templates/signals";
 import {
+  ALARM_CODE,
   ALTERNATING_ALARM_STATE,
   ALTERNATING_CUSTOM_STATE,
   AUTOMATION_STATE,
   COMMON_STATE,
   COMMUNICATION_STATE,
+  SIGNAL_CODE,
 } from "./enum";
 
 export const DEFINITIONS = {
@@ -12,19 +14,19 @@ export const DEFINITIONS = {
     descriptions: "适用于维谛PSM-A",
     properties: [
       {
-        id: "4013002",
+        id: ALARM_CODE["交流切换状态"],
         name: "交流切换状态",
         length: 1,
         enum: ALTERNATING_CUSTOM_STATE[0],
       },
       {
-        id: "4013003",
+        id: ALARM_CODE["事故照明灯状态"],
         name: "事故照明灯状态",
         length: 1,
         enum: ALTERNATING_CUSTOM_STATE[0],
       },
       {
-        id: "4013004",
+        id: ALARM_CODE["当前工作路号"],
         name: "当前工作路号",
         length: 1,
         enum: ALTERNATING_CUSTOM_STATE[0],
@@ -47,25 +49,25 @@ export const DEFINITIONS = {
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        id: "4013004",
+        id: ALARM_CODE["防雷器"],
         name: "防雷器",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        id: "4013002",
+        id: ALARM_CODE["交流输入"],
         name: "交流输入1",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        id: "4013003",
+        id: ALARM_CODE["交流输入"],
         name: "交流输入2",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
       },
       {
-        id: "4013004",
+        id: ALARM_CODE["交流输入"],
         name: "交流输入3",
         length: 1,
         enum: ALTERNATING_ALARM_STATE[0],
@@ -102,7 +104,7 @@ export const DEFINITIONS = {
       {
         id: "4011141",
         name: "模块输出电压",
-        unit: "",
+        unit: "V",
         length: 4,
       },
       {
@@ -184,66 +186,6 @@ export const DEFINITIONS = {
         name: "测点2温度",
         length: 4,
         unit: "℃",
-      },
-    ],
-  },
-  "直流屏参数-#1": {
-    description: "适用于维谛PSM-A",
-    properties: [
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组1过压告警点",
-        length: 4,
-      },
-
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组1欠压告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组1充电过流告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组2过压告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组2欠压告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池组2充电过流告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "电池房过温告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "测点1过温告警点",
-        length: 4,
-      },
-      {
-        ...DIRECT_VOLTAGE,
-        id: "4011101",
-        name: "测点2过温告警点",
-        length: 4,
       },
     ],
   },

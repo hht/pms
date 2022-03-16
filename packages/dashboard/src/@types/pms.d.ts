@@ -5,45 +5,28 @@ interface Unit {
   unitId: string;
   resourceId: string;
   ipAddress: string;
-  port: string;
-  vendor: string;
+  port: number;
+  manufacturer: string;
   model: string;
   version: string;
   unitVersion: string;
-  devices: Device[];
   interval: number;
-  createdAt: string;
-  updatedAt: string;
-  reportedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
+  reportedAt?: Date;
 }
 
 interface Device {
   id: number;
   name: string;
-  Unit: Unit;
-  unitId: string;
-  deviceId: string;
-  resourceId: string;
+  controller: string;
+  model: string;
   port: string;
-  vendor: string;
-}
-
-interface Signal {
-  id: number;
-  device: Device;
-  deviceId: string;
-  name: string;
-  value: string;
-  highestLimit?: number;
-  higherLimit?: number;
-  lowerLimit?: number;
-  lowestLimit?: number;
-  threshold?: number;
-  percent?: number;
-  interval?: number;
-  delay?: number;
-  Histories: History[];
-  Alarm: Alarm[];
+  code: string;
+  serial: string;
+  baudRate: number;
+  timeout: number;
+  updatedAt?: Date;
 }
 
 interface Alarm {
@@ -67,6 +50,11 @@ interface History {
   updatedAt: string;
 }
 
+interface DeviceResponse {
+  message?: string;
+  data: Buffer;
+}
+
 interface Port {
   path: string;
   active: boolean;
@@ -76,18 +64,61 @@ interface Port {
 }
 
 interface Message {
-  path: string;
   protocol: string;
-  baudRate?: number;
+  path: string;
+  baudRate?: string;
+  data?: number[];
   timeout?: number;
-  error?: string;
-  data: number[];
   parsed?: Object;
 }
 
-interface Protocol {
+interface Command {
   id: string;
   name: string;
-  manufacturer: string;
-  model: string;
+  command: Buffer;
+  model: string[];
+  preprocessor: (input: Buffer) => Buffer;
+  controller: string;
+  parser: (options: Signal[][]) => (input: Buffer) => Signal[];
+  options: {
+    [key: string]: Signal[];
+  };
+}
+
+interface Value {
+  name: string;
+  value: "B" | "F" | "I";
+  skip?: (value: number) => number;
+}
+
+interface Signal {
+  id: string;
+  name: string;
+  length: number;
+  lowerMinorLimit?: number;
+  lowerMajorLimit?: number;
+  upperMinorLimit?: number;
+  upperMajorLimit?: number;
+  unit?: string;
+  value?: string | number;
+  normalValue?: string | number;
+  enum?: {
+    [key: number]: string | number;
+  };
+}
+interface Component {
+  name: string;
+  description: string;
+  components: {
+    [key: string]: {
+      默认: Signal[];
+    };
+  };
+}
+
+interface Template {
+  name: string;
+  description: string;
+  protocol: string;
+  components: { [key: string]: Signal[][] };
 }

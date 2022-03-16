@@ -35,15 +35,6 @@ export const getPorts = async () => {
  * 获取系统支持的所有设备协议
  * @returns
  */
-export const getProtocols = async () => {
-  return _.chain(PROTOCOLS)
-    .map((it) => ({
-      id: it.id,
-      manufacturer: it.vendor,
-      name: it.name,
-      model: it.model,
-      command: it.commands[0].command,
-    }))
-    .groupBy("manufacturer")
-    .value();
+export const getCommands = async () => {
+  return PROTOCOLS;
 };

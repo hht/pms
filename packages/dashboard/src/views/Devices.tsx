@@ -5,12 +5,13 @@ import {
   Button,
   Card,
   Descriptions,
+  Drawer,
   message,
   Modal,
   Skeleton,
 } from "antd";
 import _ from "lodash";
-import { FC, useRef } from "react";
+import { FC, Fragment, useRef } from "react";
 
 import { PlusOutlined } from "@ant-design/icons";
 import {
@@ -23,51 +24,25 @@ import ProTable, { ActionType } from "@ant-design/pro-table";
 import { request, useRequest } from "../hooks/useRequest";
 
 import type { ProColumns } from "@ant-design/pro-table";
+import { useStore } from "../store";
+import { useReactive } from "ahooks";
+import Signals from "./Signals";
 
-const Points: FC<{ id: number }> = ({ id }) => {
-  const { refresh, data } = useRequest<{
-    values: { name: string; value: number | string }[];
-    times: number;
-    error: string;
-  }>((values) => request(`/monit/${id}`, values), {
-    onSuccess: () => {
-      message.success("获取设备数据成功");
-    },
-  });
-  if (data?.error) {
-    return <Alert message={data.error} type="error" />;
-  }
-  return (
-    <Card>
-      {data?.values ? (
-        <Descriptions
-          bordered
-          title="设备数据"
-          size="small"
-          extra={
-            <Button type="primary" onClick={refresh}>
-              刷新
-            </Button>
-          }
-        >
-          {data?.values?.map((it) => (
-            <Descriptions.Item key={it.name} label={it.name}>
-              {it.value}
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-      ) : (
-        <Skeleton active></Skeleton>
-      )}
-    </Card>
-  );
+const getModelList = (controller: string) => {
+  return _.chain(useStore.getState().commands)
+    .filter((it) => it.controller === controller)
+    .map((it) => it.model)
+    .flatten()
+    .uniq()
+    .value();
 };
 
-const Devices: FC<{
-  ports?: Port[];
-  protocols?: { [key: string]: Protocol[] };
-}> = ({ ports, protocols }) => {
+const Devices: FC = () => {
+  const { ports } = useStore((state) => state);
   const actionRef = useRef<ActionType>();
+  const values = useReactive({
+    visible: false,
+  });
   const { run: upsertDevice } = useRequest(
     (values) => request("/device", values),
     {
@@ -88,20 +63,23 @@ const Devices: FC<{
       valueType: "indexBorder",
     },
     {
-      title: "设备ID",
-      dataIndex: "deviceId",
+      title: "顺序号",
+      dataIndex: "serial",
     },
-
+    {
+      title: "设备类型",
+      dataIndex: "controller",
+    },
     {
       title: "设备名称",
       dataIndex: "name",
     },
     {
       title: "状态",
-      dataIndex: "active",
+      dataIndex: "activite",
       valueEnum: {
-        false: { text: "暂停", status: "Error" },
-        true: { text: "运行中", status: "Success" },
+        false: { text: "未采集", status: "Error" },
+        true: { text: "采集中", status: "Success" },
       },
     },
     {
@@ -119,6 +97,9 @@ const Devices: FC<{
     {
       title: "超时设置",
       dataIndex: "timeout",
+      render: (timeout) => {
+        return <span>{timeout}毫秒</span>;
+      },
     },
 
     {
@@ -140,6 +121,23 @@ const Devices: FC<{
           }}
           trigger={<Button type="primary">编辑</Button>}
         ></BetaSchemaForm>,
+        <Fragment key="config">
+          <Button
+            onClick={() => {
+              values.visible = true;
+            }}
+          >
+            配置
+          </Button>
+          <Drawer
+            visible={values.visible}
+            onClose={() => (values.visible = false)}
+            width={800}
+            destroyOnClose
+          >
+            <Signals device={record} />
+          </Drawer>
+        </Fragment>,
         <Button
           key="delete"
           danger
@@ -176,21 +174,24 @@ const Devices: FC<{
       width: "m",
     },
     {
-      title: "设备ID",
-      dataIndex: "deviceId",
+      title: "顺序号",
+      dataIndex: "serial",
+      tooltip: "该设备在本基站中的顺序号",
       formItemProps: {
         rules: [
           {
             required: true,
-            message: "此项为必填项",
+            message: "必须为两位数字",
+            pattern: /^[0-9]{2}$/,
           },
         ],
       },
       width: "m",
     },
     {
-      title: "资源ID",
-      dataIndex: "resourceId",
+      title: "设备类型",
+      dataIndex: "controller",
+      valueEnum: { 开关电源: "开关电源", 智能温湿度: "智能温湿度" },
       formItemProps: {
         rules: [
           {
@@ -199,7 +200,36 @@ const Devices: FC<{
           },
         ],
       },
-      width: "m",
+    },
+    {
+      valueType: "dependency",
+      fieldProps: {
+        name: ["controller"],
+      },
+      columns: ({ controller }) => {
+        if (controller) {
+          return [
+            {
+              dataIndex: "model",
+              title: "产品型号",
+              width: "m",
+              valueType: "select",
+              fieldProps: {
+                options: getModelList(controller),
+              },
+              formItemProps: {
+                rules: [
+                  {
+                    required: true,
+                    message: "此项为必填项",
+                  },
+                ],
+              },
+            },
+          ];
+        }
+        return [];
+      },
     },
     {
       title: "串口号",
@@ -223,7 +253,7 @@ const Devices: FC<{
       dataIndex: "timeout",
       valueType: "digit",
       fieldProps: {
-        addonAfter: "秒",
+        addonAfter: "毫秒",
         precision: 0,
       },
       formItemProps: {
@@ -238,58 +268,11 @@ const Devices: FC<{
     },
     {
       title: "状态",
-      dataIndex: "active",
-      valueType: "switch",
+      dataIndex: "activite",
+      valueType: "radio",
       valueEnum: {
-        false: { text: "暂停", status: "Error" },
-        true: { text: "运行中", status: "Success" },
-      },
-    },
-    {
-      title: "生产厂家",
-      valueType: "select",
-      dataIndex: "manufacturer",
-      fieldProps: {
-        options: _.keys(protocols),
-      },
-      formItemProps: {
-        rules: [
-          {
-            required: true,
-            message: "此项为必填项",
-          },
-        ],
-      },
-      width: "m",
-    },
-    {
-      valueType: "dependency",
-      fieldProps: {
-        name: ["manufacturer"],
-      },
-      columns: ({ manufacturer }) => {
-        if (manufacturer) {
-          return [
-            {
-              dataIndex: "model",
-              title: "产品型号",
-              width: "m",
-              valueType: "select",
-              fieldProps: {
-                options: protocols?.[manufacturer]?.map(({ model }) => model),
-              },
-              formItemProps: {
-                rules: [
-                  {
-                    required: true,
-                    message: "此项为必填项",
-                  },
-                ],
-              },
-            },
-          ];
-        }
-        return [];
+        false: { text: "未采集", status: "Error" },
+        true: { text: "采集中", status: "Success" },
       },
     },
   ];
@@ -308,10 +291,6 @@ const Devices: FC<{
         actionRef={actionRef}
         search={false}
         style={{ marginTop: 24 }}
-        expandable={{
-          expandedRowRender: (record) => <Points id={record.id!} />,
-          rowExpandable: () => true,
-        }}
         toolBarRender={() => [
           <BetaSchemaForm
             formRef={formRef}

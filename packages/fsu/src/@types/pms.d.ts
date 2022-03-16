@@ -1,15 +1,15 @@
 interface Unit {
   id: number;
-  userName: string;
-  password: string;
-  unitId: string;
-  resourceId: string;
+  userName?: string;
+  password?: string;
+  unitId?: string;
+  resourceId?: string;
   ipAddress: string;
   port: number;
-  vendor: string;
-  model: string;
-  version: string;
-  unitVersion: string;
+  manufacturer?: string;
+  model?: string;
+  version?: string;
+  unitVersion?: string;
   interval: number;
   createdAt: Date;
   updatedAt: Date;
@@ -19,13 +19,14 @@ interface Unit {
 interface Device {
   id: number;
   name: string;
-  vendor: string;
+  controller: string;
   model: string;
-  deviceId: string;
-  resourceId: string;
   port: string;
+  code: string;
+  serial: string;
   baudRate: number;
   timeout: number;
+  updatedAt: Date | null;
 }
 
 interface Alarm {
@@ -72,23 +73,15 @@ interface Message {
 }
 
 interface Command {
+  id: string;
   name: string;
   command: Buffer;
+  model: string[];
   preprocessor: (input: Buffer) => Buffer;
+  controller: string;
   parser: (options: Signal[][]) => (input: Buffer) => Signal[];
   options: {
     [key: string]: Signal[];
-  };
-}
-interface Protocol {
-  id: string;
-  name: string;
-  model: string;
-  type: string;
-  commands: Command[];
-  vendor: string;
-  rtn?: {
-    [key: string]: string;
   };
 }
 

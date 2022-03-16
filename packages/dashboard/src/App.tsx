@@ -6,19 +6,13 @@ import { FC, useState } from "react";
 import Emulator from "./views/Emulator";
 import Devices from "./views/Devices";
 import Unit from "./views/Unit";
-import { request, useRequest } from "./hooks/useRequest";
+import { useSystem } from "./store";
 
 const { Header, Content } = Layout;
 
 const App: FC = () => {
-  const { data } = useRequest(() =>
-    request<{
-      unit: Unit;
-      ports: Port[];
-      protocols: { [key: string]: Protocol[] };
-    }>("/system")
-  );
   const [current, setCurrent] = useState("1");
+  useSystem();
   return (
     <Layout>
       <Header>
@@ -35,11 +29,9 @@ const App: FC = () => {
         </Menu>
       </Header>
       <Content style={{ padding: 48 }}>
-        {current === "1" ? <Unit unit={data?.unit} /> : null}
-        {current === "2" ? (
-          <Devices ports={data?.ports} protocols={data?.protocols} />
-        ) : null}
-        {current === "3" ? <Emulator ports={data?.ports} /> : null}
+        {current === "1" ? <Unit /> : null}
+        {current === "2" ? <Devices /> : null}
+        {current === "3" ? <Emulator /> : null}
       </Content>
     </Layout>
   );

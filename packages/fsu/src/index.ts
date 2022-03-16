@@ -16,73 +16,99 @@ export const app = express();
 import protocols from "./protocols/Vertiv";
 import { LowSync, JSONFileSync } from "lowdb";
 import { join, dirname } from "path";
-const file = join(__dirname, "../database/db.json");
 
-// app.use(cors());
-// app.use(bodyParser.json());
+app.use(cors());
+app.use(bodyParser.json());
 
-// const server = createServer(app);
+const server = createServer(app);
 
 // const io = getSocketInstance(server);
 
 // getDeviceRoutes(app);
 
-// app.use(ExpressErrorHandler);
-// server.listen(8080, () => {
-//   console.log("动环系统目前正在8080端口运行...");
-//   scheduleCron(GLOBAL_INTERVAL);
-// });
+const wsdl = require("fs").readFileSync("./soap/SCService.wsdl", "utf8");
 
-const response = Buffer.from(
-  fs.readFileSync("./emulation/电总交流屏模拟量/CUC-18HA", {
-    encoding: "utf8",
-  })
-);
-
-console.log("-----");
-type Post = {
-  id: number;
-  title: string;
+const SoapService = {
+  SCServiceService: {
+    SCService: {
+      invoke: function ({ xmlData }) {
+        console.log("请求信息:", xmlData);
+        return xmlData;
+      },
+    },
+  },
 };
 
-type Data = {
-  posts: Post[];
-};
+app.use(ExpressErrorHandler);
+server.listen(8080, () => {
+  console.log("动环系统目前正在8080端口运行...");
+  // scheduleCron(GLOBAL_INTERVAL);
+  soap.listen(app, "/services/SCService", SoapService, wsdl, function () {
+    console.log("server initialized");
+  });
+});
 
-class LowWithLodash<T> extends LowSync<T> {
-  chain: _.ExpChain<this["data"]> = _.chain(this).get("data");
+/* tslint:disable:max-line-length no-empty-interface */
+export interface IinvokeInput {
+  /** soapenc:string(undefined) */
+  xmlData: string;
 }
 
-const adapter = new JSONFileSync<Data>(file);
-export const db = new LowWithLodash(adapter);
+export interface IinvokeOutput {
+  /** soapenc:string(undefined) */
+  invokeReturn: string;
+}
 
-db.read();
-const post = db.chain
-  .get("posts")
-  .find({ id: 1 })
-  .assign({ title: "hha" })
-  .value();
-console.log("good!", post);
-
-const command = protocols[protocols.length - 1].commands[0];
-try {
-  const data = command.parser(getTemplate(command.name, command.options))(
-    response
-  );
-  console.log(data, "id");
-} catch (e: any) {
-  console.log("出错啦", e.message);
+export interface ISCServiceSoap {
+  invoke: (
+    input: IinvokeInput,
+    cb: (
+      err: any | null,
+      result: IinvokeOutput,
+      raw: string,
+      soapHeader: { [k: string]: any }
+    ) => any,
+    options?: any,
+    extraHeaders?: any
+  ) => void;
 }
 
 // soap测试
-// const endpoint =
-//   "http://www.webxml.com.cn/WebServices/WeatherWebService.asmx?wsdl";
+const endpoint = "http://127.0.0.1:8080/services/SCService?wsdl";
 
-// soap.createClient(endpoint, (err, client) => {
-//   client.getSupportCity(
-//     { byProvinceName: "黑龙江" },
-//     (err: Error, result: any) => {
-//       console.log(result);
-//     }
-//   );
-// });
+const wsdlOptions = {
+  ignoredNamespaces: {
+    namespaces: ["impl", "http://SCService.chinaunicom.com"],
+    override: true,
+  },
+};
+
+soap.createClient(endpoint, wsdlOptions, (err, client) => {
+  client.SCServiceService.SCService.invoke(
+    {
+      xmlData: {
+        Request: {
+          PK_Type: {
+            Name: "LOGIN",
+            Code: "101",
+          },
+          Info: {
+            UserName: "chinamoile",
+            PassWord: "chinamonile",
+            SUId: "20032203",
+            SURId: "2222222",
+            SUPort: 8080,
+            SUVendor: "TTSC",
+            SUModel: "PSM-X",
+            SUHardVer: "1.0",
+          },
+          DeviceList: [],
+          SUVer: "2.0",
+        },
+      },
+    },
+    (err, result, raw, header) => {
+      console.log(err, result, raw, header);
+    }
+  );
+});

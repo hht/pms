@@ -3,10 +3,12 @@ import { Button, Card, Col, InputNumber, Row, Select, Tag } from "antd";
 import { FC } from "react";
 import HexEditor from "react-hex-editor";
 import oneDarkPro from "react-hex-editor/themes/oneDarkPro";
+import { useStore } from "../store";
 
 import useWebsocket from "../hooks/useSocket";
 
-const Widget: FC<{ ports?: Port[]; protocols?: Protocol[] }> = ({ ports }) => {
+const Widget: FC = () => {
+  const { ports } = useStore((state) => state);
   const state = useReactive<{
     data: number[];
     nonce: number;
