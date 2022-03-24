@@ -5,13 +5,14 @@ import {
   getDevices,
   getSignals,
   getUnit,
+  saveSignals,
   upsertDevice,
   upsertUnit,
 } from "../services/devices";
 import { ExpressAsyncNext } from "../utils";
 import { getPorts, getCommands } from "../services/system";
 import { useDeviceStore } from "../store";
-import { getDeviceConfig } from "../services/gather";
+import { getDeviceConfig, scheduleCron } from "../services/gather";
 
 /**
  * 局站相关信息接口
@@ -52,6 +53,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/device",
     ExpressAsyncNext(async (req, res) => {
       const devices = await upsertDevice(req.body);
+      scheduleCron();
       res.json(devices);
     })
   );
@@ -61,6 +63,7 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const { id } = req.params;
       const devices = await deleteDevice(parseInt(id));
+      scheduleCron();
       res.json(devices);
     })
   );
@@ -77,11 +80,17 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/config",
     ExpressAsyncNext(async (req, res) => {
-      const { device, commands } = req.body;
-      console.log(device, commands);
-      const response = await getDeviceConfig(device, commands);
-      console.log(response);
-      res.json(response);
+      const { device, commands, values } = req.body;
+      if (commands) {
+        const response = await getDeviceConfig(device, commands);
+        res.json(response);
+      }
+      if (values) {
+        console.log(device, values);
+        await saveSignals(device, values);
+        scheduleCron();
+        res.json({ code: true, msg: "保存成功" });
+      }
     })
   );
 

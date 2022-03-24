@@ -5,8 +5,7 @@ import _ from "lodash";
 
 import { PrismaClient } from "@prisma/client";
 import { scheduleCron } from "./gather";
-import { GLOBAL_INTERVAL, PROTOCOLS } from "../protocols";
-import { CONTROLLER_CODE } from "../algorithm/enum";
+import { DEVICE_CODE } from "../algorithm/enum";
 
 const prisma = new PrismaClient();
 
@@ -67,7 +66,7 @@ export const getDevice = async (id: number) => {
  */
 export const upsertDevice = async (device: Device) => {
   const unit = await getUnit();
-  const code = CONTROLLER_CODE[device.controller];
+  const code = DEVICE_CODE[device.controller];
   if (device.id) {
     return await prisma.device.update({
       data: { ..._.omitBy(device, _.isUndefined), code },
@@ -88,7 +87,7 @@ export const deleteDevice = async (id: number) => {
     where: { id },
   });
   // 如果设备删除成功则重置计划任务
-  scheduleCron(GLOBAL_INTERVAL);
+  scheduleCron();
   return deleted;
 };
 
@@ -100,5 +99,59 @@ export const getSignals = async (id: number) => {
     where: {
       deviceId: id,
     },
+  });
+};
+/**
+ * 更新设备采样点信息
+ */
+
+export const saveSignals = async (id: number, values: Signal[]) => {
+  console.log(
+    _.chain(values)
+      .map((it) => `${it.id}:${it.name}`)
+      .sort()
+      .value()
+  );
+  const response = await prisma.$transaction(async (prisma) => {
+    await prisma.signal.deleteMany({
+      where: {
+        deviceId: id,
+      },
+    });
+    const device = await prisma.device.findFirst({
+      where: {
+        id,
+      },
+    });
+    for (const value of values) {
+      await prisma.signal.create({
+        data: {
+          ...(_.omit(value, ["enum", "deviceId", "index"]) as Signal & {
+            raw: number;
+            value: string;
+            normalValue: number;
+            unit: string;
+            offset: number;
+          }),
+          device: {
+            connect: {
+              id,
+            },
+          },
+        },
+      });
+    }
+  });
+  return response;
+};
+
+/**
+ * 更新设备采样点数据
+ */
+
+export const updateSignal = async (value: Signal) => {
+  return await prisma.signal.update({
+    data: _.pick(value, ["raw", "value"]) as { raw: number; value: string },
+    where: { id: value.id },
   });
 };

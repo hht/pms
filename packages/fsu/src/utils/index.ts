@@ -6,6 +6,7 @@ import { useDeviceStore } from "../store";
 import _ from "lodash";
 import { DeviceError } from "./errors";
 import { SocketServer } from "../socket";
+import { getSignals, updateSignal } from "../services/devices";
 /**
  * 异步请求处理
  * @param fn 下一步执行的函数
@@ -286,30 +287,23 @@ export async function attempt<T>(
  * 更新设备实时数据
  * @param param0 设备信息，采样点数据，错误
  */
-export const updateDeviceValue = async ({
-  device,
-  values,
-  error,
-}: {
-  device: Device;
-  values?: {
-    name: string;
-    value: string | number;
-  }[];
-  error?: DeviceError;
-}) => {
+export const updateDeviceValue = async (
+  {
+    device,
+    values,
+    errors,
+  }: {
+    device: Device;
+    values?: Signal[];
+    errors?: { name: string; error: string }[];
+  },
+  signals: Signal[]
+) => {
   const prevState = useDeviceStore.getState()[device.id] ?? {};
-  useDeviceStore.setState({
-    [device.id]: {
-      // 保持最后一次数据信息
-      values: values ?? prevState.values,
-      // 最后一次成功读取数据的时间戳
-      timestamp: values ? _.now() : prevState.timestamp ?? _.now(),
-      // 如果成功读取则清空错误
-      error: values ? undefined : error?.message ?? prevState.error,
-      busy: prevState.busy,
-    },
-  });
+  const recieved = _.keyBy(values, "id");
+  for (const signal of signals) {
+    await updateSignal(recieved[signal.id]);
+  }
   SocketServer.instance?.emit("实时数据", {
     [device.id]: useDeviceStore.getState()[device.id],
   });

@@ -79,10 +79,8 @@ interface Command {
   model: string[];
   preprocessor: (input: Buffer) => Buffer;
   controller: string;
-  parser: (options: Signal[][]) => (input: Buffer) => Signal[];
-  options: {
-    [key: string]: Signal[];
-  };
+  parser: (command: Command) => (input: Buffer) => Signal[];
+  options?: string[];
 }
 
 interface Value {
@@ -95,12 +93,20 @@ interface Signal {
   id: string;
   name: string;
   length: number;
+  code: string;
+  ignore?: boolean;
   lowerMinorLimit?: number;
   lowerMajorLimit?: number;
   upperMinorLimit?: number;
   upperMajorLimit?: number;
   unit?: string;
+  offset?: number;
+  raw?: number;
   value?: string | number;
+  threshold?: number;
+  ThresholdPercent?: number;
+  startDelay?: number;
+  endDelay?: number;
   normalValue?: string | number;
   enum?: {
     [key: number]: string | number;

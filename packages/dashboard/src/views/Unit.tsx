@@ -24,6 +24,7 @@ const Widget: FC = () => {
       title: "运行信息",
       valueType: "group",
       columns: [
+        { title: "局站序号", dataIndex: "id", hideInForm: true },
         {
           title: "局站ID",
           dataIndex: "unitId",
@@ -106,29 +107,34 @@ const Widget: FC = () => {
   ];
   return (
     <Card>
-      <BetaSchemaForm
-        formRef={formRef}
-        title="编辑设备"
-        key="edit"
-        columns={proColumns}
-        initialValues={{ ...unit }}
-        onFinish={async (values) => {
-          await upsertUnit(values);
-          useStore.setState({ timestamp: new Date().getTime() });
-          return true;
-        }}
-        trigger={<Button type="primary">编辑</Button>}
-        submitter={{
-          render: (props, doms) => {
-            return [
-              ...doms,
-              <Button htmlType="button" danger onClick={() => {}} key="restart">
-                重启采集
-              </Button>,
-            ];
-          },
-        }}
-      ></BetaSchemaForm>
+      {unit ? (
+        <BetaSchemaForm<Unit>
+          formRef={formRef}
+          columns={proColumns}
+          initialValues={{ ...unit }}
+          onFinish={async (values) => {
+            await upsertUnit({ ...values, id: unit.id });
+            useStore.setState({ timestamp: new Date().getTime() });
+            return true;
+          }}
+          layoutType="Form"
+          submitter={{
+            render: (props, doms) => {
+              return [
+                ...doms,
+                <Button
+                  htmlType="button"
+                  danger
+                  onClick={() => {}}
+                  key="restart"
+                >
+                  重启采集
+                </Button>,
+              ];
+            },
+          }}
+        ></BetaSchemaForm>
+      ) : null}
     </Card>
   );
 };

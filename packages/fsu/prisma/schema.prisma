@@ -2,7 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+
 }
 
 datasource db {
@@ -66,25 +68,24 @@ model Device {
 }
 
 model Signal {
-  id Int @id @default(autoincrement())
-
+  id               String  @id
   name             String
   code             String
-  serial           String
-  raw              Float
+  raw              Float?
   value            String
-  normalValue      String?
-  unit             String
+  normalValue      Int?
+  unit             String?
   command          String?
   offset           Int
   length           Int     @default(4)
-  description      String
+  ignore           Boolean @default(false)
   upperMinorLimit  Float?
   upperMajorLimit  Float?
   lowerMinorLimit  Float?
   lowerMajorLimit  Float?
   threshold        Float?
-  ThresholdPercent Float?
+  thresholdPercent Float?
+
 
   startDelay Int?
   endDelay   Int?

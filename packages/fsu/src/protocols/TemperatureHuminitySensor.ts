@@ -11,23 +11,23 @@ const PROTOCOLS: Command[] = [
     model: ["智能温湿度"],
     command: Buffer.from([0x01, 0x03, 0x00, 0x00, 0x00, 0x02]),
     preprocessor: appendCrc16,
-    parser:
-      ([]) =>
-      (input: Buffer) => {
-        const values: number[] = [];
-        const length = input.readInt8(2);
-        for (let i = 0; i < length; i += 2) {
-          values.push(input.readInt16BE(i + 2 + 1) / 10);
-        }
-        return ["湿度", "温度"].map((name, index) => ({
-          name,
-          value: values[index] as number,
-          unit: "℃",
-          length: 2,
-          id: "",
-        }));
-      },
-    options: {},
+    parser: () => (input: Buffer) => {
+      const values: number[] = [];
+      const length = input.readInt8(2);
+      for (let i = 0; i < length; i += 2) {
+        values.push(input.readInt16BE(i + 2 + 1) / 10);
+      }
+      return ["湿度", "温度"].map((name, index) => ({
+        name,
+        code: "",
+        offset: index,
+        raw: values[index],
+        value: values[index] as number,
+        unit: "℃",
+        length: 2,
+        id: "",
+      }));
+    },
   },
 ];
 

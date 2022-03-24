@@ -4,6 +4,23 @@
 import _ from "lodash";
 import { DeviceError } from "../utils/errors";
 import { RTN } from "./enum";
+import {
+  ALTERNATING_ALARM_STATE,
+  ALTERNATING_BREAKER_STATE,
+  CHARGING_STATE,
+  COMMON_STATE,
+  POWER_STATE,
+  SIGNAL_CODE,
+  THROTTLING_STATE,
+} from "../algorithm/enum";
+import { CUSTOM_PROPERTIES } from "../algorithm/vendor";
+import {
+  ALTERNATING_FREQUENCY,
+  ALTERNATING_VOLTAGE,
+  ALTERNATING_CURRENT,
+  DIRECT_VOLTAGE,
+  DIRECT_CURRENT,
+} from "./signals";
 
 /**
  * 分解电总协议长度数据
@@ -96,6 +113,238 @@ export const getPayload = (input: Buffer, divider = true) => {
   );
 };
 
+const Template: {
+  [key: string]: (Omit<Signal, "id" | "code">[] | string)[];
+} = {
+  /**
+   * 交流屏模拟量模版，数组数据顺序为:
+   * 单屏一路数据
+   * 单屏一路用户自定义数据
+   * 单屏数据
+   * */
+  交流屏模拟量: [
+    [
+      {
+        ...ALTERNATING_VOLTAGE,
+        name: "输入电压A",
+      },
+      {
+        ...ALTERNATING_VOLTAGE,
+        name: "输入电压B",
+      },
+      {
+        ...ALTERNATING_VOLTAGE,
+        name: "输入电压C",
+      },
+      {
+        ...ALTERNATING_FREQUENCY,
+        name: "输入频率",
+      },
+    ],
+    "交流屏模拟量",
+    [
+      {
+        ...ALTERNATING_CURRENT,
+        name: "输出电流A",
+      },
+      {
+        ...ALTERNATING_CURRENT,
+        name: "输出电流B",
+      },
+      {
+        ...ALTERNATING_CURRENT,
+        name: "输出电流C",
+      },
+    ],
+  ],
+  /**
+   * 交流屏状态量模版，数组数据顺序为:
+   * 单屏状态
+   * 单屏用户自定义数据
+   * */
+  交流屏状态量: [
+    [
+      {
+        name: "防雷器空开跳闸",
+        length: 1,
+        enum: ALTERNATING_BREAKER_STATE,
+        normalValue: 0x01,
+      },
+    ],
+    "交流屏状态量",
+  ],
+  /**
+   * 交流屏告警量模版，数组数据顺序为:
+   * 单屏一路告警
+   * 单屏一路开关告警
+   * 单屏用户自定义数据
+   * 单屏告警
+   * */
+  交流屏告警量: [
+    [
+      {
+        name: "输入电压A",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+      {
+        name: "输入电压B",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+      {
+        name: "输入电压C",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+      {
+        name: "输入频率",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+    ],
+    [
+      {
+        name: "融丝/开关",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+    ],
+    "交流屏告警量",
+    [
+      {
+        name: "输出电流A",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+      {
+        name: "输出电流B",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+      {
+        name: "输出电流C",
+        length: 1,
+        enum: ALTERNATING_ALARM_STATE[0],
+        normalValue: 0x00,
+      },
+    ],
+  ],
+  /**
+   * 整流模块模拟量模版，数组数据顺序为:
+   * 整流模块输出电压
+   * 整流模块输出电流
+   * 用户自定义数据
+   * */
+  整流模块模拟量: [
+    [
+      {
+        ...DIRECT_VOLTAGE,
+        name: "输出电压",
+      },
+    ],
+    [
+      {
+        ...DIRECT_CURRENT,
+        name: "输出电流",
+      },
+    ],
+    "整流模块模拟量",
+  ],
+  /**
+   * 整流模块状态量模版，数组数据顺序为:
+   * 整流模块状态
+   * 用户自定义数据
+   * */
+  整流模块状态量: [
+    [
+      {
+        name: "开机/关机状态",
+        length: 1,
+        enum: POWER_STATE,
+        normalValue: 0x00,
+      },
+      {
+        name: "限流/不限流状态",
+        length: 1,
+        enum: THROTTLING_STATE,
+        normalValue: 0x00,
+      },
+      {
+        name: "浮充/均充/测试状态",
+        length: 1,
+        enum: CHARGING_STATE,
+        normalValue: 0x00,
+      },
+    ],
+    "整流模块状态量",
+  ],
+  /**
+   * 整流模块告警量模版，数组数据顺序为:
+   * 整流模块告警
+   * 用户自定义数据
+   */
+  整流模块告警量: [
+    [
+      {
+        name: "整流模块状态",
+        length: 1,
+        enum: COMMON_STATE,
+        normalValue: 0x00,
+      },
+    ],
+    "整流模块告警量",
+  ],
+  /**
+   * 直流屏模拟量模版
+   */
+  直流屏模拟量: [
+    [
+      {
+        ...DIRECT_VOLTAGE,
+        name: "直流输出电压",
+      },
+      { ...DIRECT_CURRENT, name: "总负载电流" },
+    ],
+    [{ ...DIRECT_CURRENT, name: "电流" }],
+    [{ ...DIRECT_CURRENT, name: "电流" }],
+    "直流屏电池组数据",
+    "直流屏模拟量",
+  ],
+};
+
+export const getTemplate = (command: Command) => {
+  return Template[command.name]!.map((it) => {
+    if (typeof it !== "string") {
+      return it.map((s) => ({
+        ...s,
+        id: "",
+        code: SIGNAL_CODE[s.name],
+      }));
+    } else {
+      const customOptions = CUSTOM_PROPERTIES.find(
+        (property) =>
+          property.name === it &&
+          _.intersection(property.model, command.model).length > 0
+      );
+      return (
+        customOptions?.properties.map((s) => ({
+          ...s,
+          id: "",
+          code: SIGNAL_CODE[s.name],
+        })) ?? []
+      );
+    }
+  });
+};
+
 // ------------------
 
 /**
@@ -103,459 +352,402 @@ export const getPayload = (input: Buffer, divider = true) => {
  * @param input 数据
  * @param options 参数
  */
-export const parseAlternatingValues =
-  (multi = true) =>
-  (options: Signal[][]) =>
-  (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const screenCount = multi ? data.readInt8(offset) : 1;
-    offset += multi ? 1 : 0;
-    for (let i = 0; i < screenCount; i++) {
-      const forkCount = data.readInt8(offset);
-      offset += 1;
-      for (let j = 0; j < forkCount; j++) {
-        for (const signal of options[0]) {
-          response.push({
-            ...signal,
-            name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-            raw: data.readFloatLE(offset),
-            id: `${signal.id}-${_.padStart(
-              `${i * forkCount + j + 1}`,
-              3,
-              "0"
-            )}`,
-            offset,
-          });
-          offset += 4;
-        }
-        const customCount = data.readUInt8(offset);
-        offset += 1;
-        for (let k = 0; k < customCount; k++) {
-          for (const signal of options[1]) {
-            response.push({
-              ...signal,
-              name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-              value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-              raw: data.readFloatLE(offset),
-              id: `${signal.id}-${_.padStart(
-                `${i * forkCount + j * customCount + k + 1}`,
-                3,
-                "0"
-              )}`,
-              offset,
-            });
-            offset += 4;
-          }
-        }
-      }
-      for (const signal of options[2]) {
+export const parseAlternatingValues = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const screenCount = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < screenCount; i++) {
+    const forkCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < forkCount; j++) {
+      for (const signal of options[0]) {
         response.push({
           ...signal,
-          name: `交流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+          name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 4;
       }
+      const customCount = data.readUInt8(offset);
+      offset += 1;
+      for (let k = 0; k < customCount; k++) {
+        for (const signal of options[1]) {
+          if (signal.code && !signal.ignore) {
+            response.push({
+              ...signal,
+              name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
+              value: `${data.readFloatLE(offset).toFixed(2)}${
+                signal.unit ?? ""
+              }`,
+              raw: data.readFloatLE(offset),
+              offset,
+            });
+          }
+          offset += 4;
+        }
+      }
     }
-    return response;
-  };
+    for (const signal of options[2]) {
+      if (signal.code && !signal.ignore) {
+        response.push({
+          ...signal,
+          name: `交流屏#${i + 1}${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+          raw: data.readFloatLE(offset),
+          offset,
+        });
+      }
+      offset += 4;
+    }
+  }
+  return response;
+};
 
 /**
  * 电总交流屏状态量
  * @param input 数据
  * @param options 参数
  */
-export const parseAlternatingStatus =
-  (multi = true) =>
-  (options: Signal[][]) =>
-  (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const screenCount = multi ? data.readInt8(offset) : 1;
-    offset += multi ? 1 : 0;
-    for (let i = 0; i < screenCount; i++) {
-      const forkCount = data.readInt8(offset);
-      offset += 1;
-      for (let j = 0; j < forkCount; j++) {
-        for (const signal of options[0]) {
-          const value = data.readUInt8(offset);
-          response.push({
-            ...signal,
-            name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-            value: signal.enum![value],
-            raw: value,
-            id: `${signal.id}-${_.padStart(
-              `${i * forkCount + j + 1}`,
-              3,
-              "0"
-            )}`,
-            offset,
-          });
-          offset += 1;
-        }
-      }
-      const customCount = data.readUInt8(offset);
-      offset += 1;
-      for (const [index, signal] of options[1].entries()) {
-        if (index > customCount - 1) {
-          break;
-        }
+export const parseAlternatingStatus = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const screenCount = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < screenCount; i++) {
+    const forkCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < forkCount; j++) {
+      for (const signal of options[0]) {
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
-          name: `交流屏#${i + 1}${signal.name}`,
+          name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
       }
     }
-    return response;
-  };
+    const customCount = data.readUInt8(offset);
+    offset += 1;
+    for (const [index, signal] of options[1].entries()) {
+      if (index > customCount - 1) {
+        break;
+      }
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `交流屏#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
+      offset += 1;
+    }
+  }
+  return response;
+};
 
 /**
  * 电总交流屏告警量
  * @param input 数据
  * @param options 参数
  */
-export const parseAlternatingAlarms =
-  (multi = true) =>
-  (options: Signal[][]) =>
-  (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const screenCount = multi ? data.readInt8(offset) : 1;
-    offset += multi ? 1 : 0;
-    for (let i = 0; i < screenCount; i++) {
-      const forkCount = data.readInt8(offset);
+export const parseAlternatingAlarms = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const screenCount = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < screenCount; i++) {
+    const forkCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < forkCount; j++) {
+      for (const signal of options[0]) {
+        const value = data.readUInt8(offset);
+        response.push({
+          ...signal,
+          name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
+          value: signal.enum![value],
+          raw: value,
+          offset,
+        });
+        offset += 1;
+      }
+      const switchCount = data.readUInt8(offset);
       offset += 1;
-      for (let j = 0; j < forkCount; j++) {
-        for (const signal of options[0]) {
+      for (let k = 0; k < switchCount; k++) {
+        for (const signal of options[1]) {
           const value = data.readUInt8(offset);
           response.push({
             ...signal,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             value: signal.enum![value],
             raw: value,
-            id: `${signal.id}-${_.padStart(
-              `${i * forkCount + j + 1}`,
-              3,
-              "0"
-            )}`,
-            offset,
-          });
-          offset += 1;
-        }
-        const switchCount = data.readUInt8(offset);
-        offset += 1;
-        for (let k = 0; k < switchCount; k++) {
-          for (const signal of options[1]) {
-            const value = data.readUInt8(offset);
-            response.push({
-              ...signal,
-              name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-              value: signal.enum![value],
-              raw: value,
-              id: `${signal.id}-${_.padStart(
-                `${i * forkCount + j * switchCount + k + 1}`,
-                3,
-                "0"
-              )}`,
-              offset,
-            });
-            offset += 1;
-          }
-        }
-        const customCount = data.readUInt8(offset);
-        offset += 1;
-        for (const [index, signal] of options[2].entries()) {
-          if (index > customCount - 1) {
-            break;
-          }
-          const value = data.readUInt8(offset);
-          response.push({
-            ...signal,
-            name: `交流屏#${i + 1}${signal.name}`,
-            value: signal.enum![value],
-            raw: value,
-            id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
             offset,
           });
           offset += 1;
         }
       }
-      for (const signal of options[3]) {
+      const customCount = data.readUInt8(offset);
+      offset += 1;
+      for (const [index, signal] of options[2].entries()) {
+        if (index > customCount - 1) {
+          break;
+        }
         const value = data.readUInt8(offset);
         response.push({
           ...signal,
           name: `交流屏#${i + 1}${signal.name}`,
           value: signal.enum![value],
           raw: value,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
           offset,
         });
         offset += 1;
       }
     }
-    return response;
-  };
+    for (const signal of options[3]) {
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `交流屏#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
+      offset += 1;
+    }
+  }
+  return response;
+};
 
 /**
  * 获取整流模块模拟量
  * @param input 数据
  * @returns
  */
-export const parseRectifierValues =
-  (options: Signal[][]) => (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    for (const signal of options[0]) {
+export const parseRectifierValues = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  for (const signal of options[0]) {
+    response.push({
+      ...signal,
+      name: signal.name,
+      value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+      raw: data.readFloatLE(offset),
+      offset,
+    });
+    offset += 4;
+  }
+
+  const count = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < count; i++) {
+    for (const signal of options[1]) {
       response.push({
         ...signal,
-        name: signal.name,
-        id: `${signal.id}-001`,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+        name: `整流模块#${i + 1}${signal.name}`,
+        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
         raw: data.readFloatLE(offset),
         offset,
       });
       offset += 4;
     }
-
-    const count = data.readInt8(offset);
+    const customCount = data.readInt8(offset);
     offset += 1;
-    for (let i = 0; i < count; i++) {
-      for (const signal of options[1]) {
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `整流模块#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-          raw: data.readFloatLE(offset),
-          offset,
-        });
-        offset += 4;
+    for (const [index, signal] of options[2].entries()) {
+      if (index > customCount - 1) {
+        break;
       }
-      const customCount = data.readInt8(offset);
-      offset += 1;
-      for (const [index, signal] of options[2].entries()) {
-        if (index > customCount - 1) {
-          break;
-        }
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: signal.name,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-          raw: data.readFloatLE(offset),
-          offset,
-        });
-        offset += 4;
-      }
+      response.push({
+        ...signal,
+        name: signal.name,
+        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+        raw: data.readFloatLE(offset),
+        offset,
+      });
+      offset += 4;
     }
-
-    return response;
-  };
+  }
+  return response;
+};
 
 /**
  * 获取整流模块状态量
  * @returns
  */
-export const parseRectifierStatus =
-  (options: Signal[][]) => (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const count = data.readInt8(offset);
-    offset += 1;
-    for (let i = 0; i < count; i++) {
-      for (const signal of options[0]) {
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
-          raw: value,
-          offset,
-        });
-        offset += 1;
-      }
-      const customCount = data.readInt8(offset);
+export const parseRectifierStatus = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const count = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < count; i++) {
+    for (const signal of options[0]) {
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `整流模块#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
       offset += 1;
-      for (const [index, signal] of options[1].entries()) {
-        if (index > customCount - 1) {
-          break;
-        }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
-          raw: value,
-          offset,
-        });
-        offset += 1;
-      }
     }
-    return response;
-  };
+    const customCount = data.readInt8(offset);
+    offset += 1;
+    for (const [index, signal] of options[1].entries()) {
+      if (index > customCount - 1) {
+        break;
+      }
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `整流模块#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
+      offset += 1;
+    }
+  }
+  return response;
+};
 
 /**
  * 整流模块告警量
  * @param input 数据
  * @returns
  */
-export const parseRectifierAlarms =
-  (options: Signal[][]) => (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const count = data.readInt8(offset);
-    offset += 1;
-    for (let i = 0; i < count; i++) {
-      for (const signal of options[0]) {
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
-          raw: value,
-          offset,
-        });
-        offset += 1;
-      }
-      const customCount = data.readUInt8(offset);
+export const parseRectifierAlarms = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const count = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < count; i++) {
+    for (const signal of options[0]) {
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `整流模块#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
       offset += 1;
-      for (const [index, signal] of options[1].entries()) {
-        if (index > customCount - 1) {
-          break;
-        }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
-          raw: value,
-          offset,
-        });
-        offset += 1;
-      }
     }
-    return response;
-  };
+    const customCount = data.readUInt8(offset);
+    offset += 1;
+    for (const [index, signal] of options[1].entries()) {
+      if (index > customCount - 1) {
+        break;
+      }
+      const value = data.readUInt8(offset);
+      response.push({
+        ...signal,
+        name: `整流模块#${i + 1}${signal.name}`,
+        value: signal.enum![value],
+        raw: value,
+        offset,
+      });
+      offset += 1;
+    }
+  }
+  return response;
+};
 
 /**
  * 直流屏模拟量
  * @param options
  * @returns
  */
-export const parseDirectValues =
-  (multi = true) =>
-  (options: Signal[][]) =>
-  (input: Buffer) => {
-    const data = getPayload(input);
-    let offset = 0;
-    const response = [];
-    const screenCount = multi ? data.readInt8(offset) : 1;
-    offset += multi ? 1 : 0;
-    for (let i = 0; i < screenCount; i++) {
-      for (const signal of options[0]) {
+export const parseDirectValues = (command: Command) => (input: Buffer) => {
+  const options = getTemplate(command);
+  const data = getPayload(input);
+  let offset = 0;
+  const response = [];
+  const screenCount = data.readInt8(offset);
+  offset += 1;
+  for (let i = 0; i < screenCount; i++) {
+    for (const signal of options[0]) {
+      response.push({
+        ...signal,
+        name: `直流屏#${i + 1}${signal.name}`,
+        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+        raw: data.readFloatLE(offset),
+        offset,
+      });
+      offset += 4;
+    }
+    const groupCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < groupCount; j++) {
+      for (const signal of options[1]) {
         response.push({
           ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `直流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-          raw: data.readFloatLE(offset),
-          offset,
-        });
-        offset += 4;
-      }
-      const groupCount = data.readInt8(offset);
-      offset += 1;
-      for (let j = 0; j < groupCount; j++) {
-        for (const signal of options[1]) {
-          response.push({
-            ...signal,
-            id: `${signal.id}-${_.padStart(
-              `${i * screenCount + j * groupCount + 1}`,
-              3,
-              "0"
-            )}`,
-            name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-            raw: data.readFloatLE(offset),
-            offset,
-          });
-          offset += 4;
-        }
-      }
-      const forkCount = data.readInt8(offset);
-      offset += 1;
-      for (let j = 0; j < forkCount; j++) {
-        for (const signal of options[2]) {
-          response.push({
-            ...signal,
-            id: `${signal.id}-${_.padStart(
-              `${i * screenCount + j * forkCount + 1}`,
-              3,
-              "0"
-            )}`,
-            name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
-            raw: data.readFloatLE(offset),
-            offset,
-          });
-          offset += 4;
-        }
-      }
-      const customCount = data.readInt8(offset);
-      offset += 1;
-      for (let j = 0; j < groupCount; j++) {
-        for (const [index, signal] of options[3].entries()) {
-          response.push({
-            ...signal,
-            id: `${signal.id}-${_.padStart(
-              `${i * screenCount + j * groupCount + 1}`,
-              3,
-              "0"
-            )}`,
-            name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
-            raw: data.readFloatLE(offset),
-            offset,
-          });
-          offset += 4;
-        }
-      }
-      for (const [index, signal] of options[4].entries()) {
-        if (index > customCount - groupCount * options[3].length - 1) {
-          break;
-        }
-        response.push({
-          ...signal,
-          id: `${signal.id}-${_.padStart(`${i + 1}`, 3, "0")}`,
-          name: `直流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit}`,
+          name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           offset,
         });
         offset += 4;
       }
     }
-    console.log(data.length, offset);
-    return response;
-  };
+    const forkCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < forkCount; j++) {
+      for (const signal of options[2]) {
+        response.push({
+          ...signal,
+          name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
+          raw: data.readFloatLE(offset),
+          offset,
+        });
+        offset += 4;
+      }
+    }
+    const customCount = data.readInt8(offset);
+    offset += 1;
+    for (let j = 0; j < groupCount; j++) {
+      for (const [index, signal] of options[3].entries()) {
+        response.push({
+          ...signal,
+          name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+          raw: data.readFloatLE(offset),
+          offset,
+        });
+        offset += 4;
+      }
+    }
+    for (const [index, signal] of options[4].entries()) {
+      if (index > customCount - groupCount * options[3].length - 1) {
+        break;
+      }
+      response.push({
+        ...signal,
+        name: `直流屏#${i + 1}${signal.name}`,
+        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
+        raw: data.readFloatLE(offset),
+        offset,
+      });
+      offset += 4;
+    }
+  }
+  return response;
+};

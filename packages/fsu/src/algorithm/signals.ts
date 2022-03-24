@@ -1,4 +1,4 @@
-type T = Omit<Signal, "id">;
+type T = Omit<Signal, "id" | "code">;
 export const ALTERNATING_VOLTAGE: T = {
   name: "交流电压",
   unit: "V",

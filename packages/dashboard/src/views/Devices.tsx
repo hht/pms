@@ -132,7 +132,8 @@ const Devices: FC = () => {
           <Drawer
             visible={values.visible}
             onClose={() => (values.visible = false)}
-            width={800}
+            width="100%"
+            title="采样点配置"
             destroyOnClose
           >
             <Signals device={record} />
@@ -267,9 +268,13 @@ const Devices: FC = () => {
       width: "m",
     },
     {
-      title: "状态",
+      title: "采集状态",
       dataIndex: "activite",
-      valueType: "radio",
+      valueType: "switch",
+      fieldProps: {
+        checkedChildren: "开",
+        unCheckedChildren: "关",
+      },
       valueEnum: {
         false: { text: "未采集", status: "Error" },
         true: { text: "采集中", status: "Success" },
