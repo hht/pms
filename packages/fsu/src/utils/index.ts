@@ -2,11 +2,8 @@
  * 工具函数
  */
 import { NextFunction, Request, Response } from "express";
-import { useDeviceStore } from "../store";
 import _ from "lodash";
-import { DeviceError } from "./errors";
-import { SocketServer } from "../socket";
-import { getSignals, updateSignal } from "../services/devices";
+
 /**
  * 异步请求处理
  * @param fn 下一步执行的函数
@@ -282,29 +279,3 @@ export async function attempt<T>(
 
   return makeAttempt();
 }
-
-/**
- * 更新设备实时数据
- * @param param0 设备信息，采样点数据，错误
- */
-export const updateDeviceValue = async (
-  {
-    device,
-    values,
-    errors,
-  }: {
-    device: Device;
-    values?: Signal[];
-    errors?: { name: string; error: string }[];
-  },
-  signals: Signal[]
-) => {
-  const prevState = useDeviceStore.getState()[device.id] ?? {};
-  const recieved = _.keyBy(values, "id");
-  for (const signal of signals) {
-    await updateSignal(recieved[signal.id]);
-  }
-  SocketServer.instance?.emit("实时数据", {
-    [device.id]: useDeviceStore.getState()[device.id],
-  });
-};

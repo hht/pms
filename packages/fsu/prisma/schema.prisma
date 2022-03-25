@@ -9,7 +9,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:../database/pms.db"
+  url      = "file:../database/pms.db?socket_timeout=10&connection_limit=1"
 }
 
 model Unit {
@@ -50,6 +50,7 @@ model Device {
   serial       String
   name         String
   controller   String   @default("")
+  protocol     String   @default("")
   model        String
   productionAt DateTime @default(now())
   version      String   @default("")
@@ -68,7 +69,7 @@ model Device {
 }
 
 model Signal {
-  id               String  @id
+  id               String  @id @unique
   name             String
   code             String
   raw              Float?

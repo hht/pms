@@ -2,12 +2,11 @@
  * 采集程序
  */
 import { InterByteTimeoutParser, SerialPort } from "serialport";
-import { getDevice, getDevices, getSignals } from "./devices";
+import { getDevices, getSignals } from "./devices";
 import schedule from "node-schedule";
-import { GLOBAL_INTERVAL, PROTOCOLS } from "../protocols";
-import { useBufferStore, useDeviceStore } from "../store";
+import { GLOBAL_INTERVAL } from "../protocols";
+import { useBufferStore } from "../store";
 import _ from "lodash";
-import { attempt, updateDeviceValue } from "../utils";
 import fs from "fs";
 
 const PORTS: SerialPort[] = [];
@@ -44,16 +43,7 @@ const resetDevices = async () => {
         baudRate: device.baudRate,
         autoOpen: true,
       },
-      (error: any) => {
-        updateDeviceValue(
-          {
-            device,
-            errors: [{ name: device.name, error: "串口初始化失败" }],
-            values: [],
-          },
-          []
-        );
-      }
+      (error: any) => {}
     );
     PORTS.push(port);
     // 如果数据之间间隔超过100毫秒则读取数据并更新串口对应的缓冲区
@@ -67,125 +57,6 @@ const resetDevices = async () => {
           ]),
         });
       });
-  }
-};
-
-/**
- * 获取设备实时数据
- * @param device 设备
- * @param command 命令
- * @returns
- */
-const getDeviceValue = (device: Device, command: Command) => {
-  const port = PORTS.find((it) => it.path === device.port);
-  return new Promise((resolve, reject) => {
-    // 根据设备超时时间读取缓冲区
-    setTimeout(async () => {
-      const response = await _.attempt(
-        command?.parser(command),
-        useBufferStore.getState()[device.port]
-      );
-      // 如果数据校验不通过则报错
-      if (_.isError(response) || _.isNull(response)) {
-        reject(response);
-      }
-      // 清空数据缓冲区
-      useBufferStore.setState({ [device.port]: Buffer.alloc(0) });
-      resolve(
-        _.chain(response as unknown as Signal[])
-          .filter((it) => !it.ignore && !!it.code)
-          .orderBy("name")
-          .groupBy("code")
-          .mapValues((values) =>
-            values.map((value, index) => ({
-              ...value,
-              id: `${device.code}-${value.length === 1 ? 3 : 1}-${
-                value.code
-              }-${_.padStart(`${index}`, 3, "0")}`,
-              command: command.name,
-            }))
-          )
-          .values()
-          .flatten()
-          .orderBy("name")
-          .value()
-      );
-    }, device.timeout * 1000);
-    // 发送命令
-    port?.write(command.preprocessor(command.command));
-  });
-};
-
-/**
- * 获取设备所有实时数据
- * @param device 设备
- * @param commands 命令
- * @param activeSignals 当前命令列表
- * @returns
- */
-const getDeviceValues = async (device: Device, commands: Command[]) => {
-  const values: Signal[] = [];
-  const errors: { name: string; error: string }[] = [];
-  try {
-    // 如果上一次没有完成，取消本次采样
-    if (useDeviceStore.getState()[device.id]?.busy) {
-      return {
-        errors: [{ name: device.name, error: "设备忙碌" }],
-      };
-    }
-    useDeviceStore.setState(
-      { [device.id]: { ...useDeviceStore.getState()[device.id], busy: true } },
-      false
-    );
-    const port = PORTS.find((it) => it.path === device.port);
-    if (!port) {
-      errors.push({ name: device.name, error: `${device.port} 串口未打开` });
-      return { errors };
-    }
-    // 如果串口没有打开则尝试打开串口
-    if (!port.isOpen) {
-      const opened = await new Promise((resolve, reject) => {
-        port.open((error) => {
-          if (error) {
-            errors.push({
-              name: device.name,
-              error: `${device.port} 串口打开失败`,
-            });
-            reject(error);
-          }
-          resolve(true);
-        });
-      });
-      if (opened !== true) {
-        return { errors };
-      }
-    }
-
-    // 根据设备命令获取设备实时数据
-
-    for (const command of commands) {
-      try {
-        // 每个命令尝试三次读取，如果三次都读取不到数据则报错
-        const values = (await attempt(() =>
-          getDeviceValue(device, command)
-        )) as Signal[];
-        // TODO 更新设备信息
-        for (const value of values) {
-          values.push(value);
-        }
-      } catch (error: any) {
-        errors.push({ name: command.name, error: error.message });
-      }
-    }
-    return { values, errors };
-  } catch (e) {
-    errors.push({ name: device.name, error: "设备错误" });
-    return { values, errors };
-  } finally {
-    useDeviceStore.setState(
-      { [device.id]: { ...useDeviceStore.getState()[device.id], busy: false } },
-      false
-    );
   }
 };
 
@@ -209,14 +80,6 @@ export const scheduleCron = async () => {
             .value() as {
             [key: string]: Signal[];
           };
-          const commands = PROTOCOLS.filter((it) =>
-            it.model.includes(device.model)
-          ).filter((it) => _.keys(activeSignals).includes(it.name));
-          const { values, errors } = await getSimulationValues(
-            device,
-            commands
-          );
-          updateDeviceValue({ device, values, errors }, signals as Signal[]);
           // const;
         } catch (e: any) {
           console.log("错误处理", e.message, e.data);
@@ -275,65 +138,10 @@ const getSimulationValue = async (device: Device, command: Command) => {
 };
 
 /**
- * 根据文件获取设备实时数据
- * @param device 设备
- * @param command 命令
- * @returns
- */
-const getSimulationValues = async (device: Device, commands: Command[]) => {
-  const values: Signal[] = [];
-  const errors: { name: string; error: string }[] = [];
-  try {
-    // 如果上一次没有完成，取消本次采样
-    if (useDeviceStore.getState()[device.id]?.busy) {
-      return {
-        errors: [{ name: device.name, error: "设备忙碌" }],
-      };
-    }
-    useDeviceStore.setState(
-      { [device.id]: { ...useDeviceStore.getState()[device.id], busy: true } },
-      false
-    );
-
-    // 根据设备命令获取设备实时数据
-    for (const command of commands) {
-      try {
-        // 每个命令尝试三次读取，如果三次都读取不到数据则报错
-        const v = await attempt(() => getSimulationValue(device, command));
-        // TODO 更新设备信息
-        for (const value of v) {
-          values.push(value);
-        }
-      } catch (error: any) {
-        errors.push({ name: command.name, error: error.message });
-      }
-    }
-    return { values, errors };
-  } catch (e) {
-    errors.push({ name: device.name, error: "设备错误" });
-    return { values, errors };
-  } finally {
-    useDeviceStore.setState(
-      { [device.id]: { ...useDeviceStore.getState()[device.id], busy: false } },
-      false
-    );
-  }
-};
-
-/**
  * 获取设备的配置信息
  * @param id 设备ID
  * @param commandIds 命令ID列表
  */
 export const getDeviceConfig = async (id: number, commandIds: string[]) => {
-  const commands = PROTOCOLS.filter((it) => commandIds.includes(it.id));
-  const device = await getDevice(id);
-  if (!device) {
-    throw new Error("设备不存在，请刷新页面重新获取数据");
-  }
-  try {
-    return await getSimulationValues(device, commands);
-  } catch (e: any) {
-    return { values: [], errors: [{ name: "设备错误", error: e.message }] };
-  }
+  return { values: [], errors: [] };
 };

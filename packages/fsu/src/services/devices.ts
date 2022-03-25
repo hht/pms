@@ -7,7 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import { scheduleCron } from "./gather";
 import { DEVICE_CODE } from "../algorithm/enum";
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 /**
  * 获取局站信息

@@ -12,7 +12,7 @@ import {
 import { ExpressAsyncNext } from "../utils";
 import { getPorts, getCommands } from "../services/system";
 import { useDeviceStore } from "../store";
-import { getDeviceConfig, scheduleCron } from "../services/gather";
+import { scheduleCron } from "../services/gather";
 
 /**
  * 局站相关信息接口

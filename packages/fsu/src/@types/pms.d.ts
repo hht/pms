@@ -27,6 +27,7 @@ interface Device {
   baudRate: number;
   timeout: number;
   updatedAt: Date | null;
+  activite: boolean;
 }
 
 interface Alarm {
