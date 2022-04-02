@@ -1,10 +1,12 @@
-import { SerialPort } from "serialport";
-import _ from "lodash";
+import { InterByteTimeoutParser, SerialPort } from "serialport";
+import _, { reject } from "lodash";
 import { attempt } from "../utils";
 import fs from "fs";
 import path from "path";
-import { prisma } from "../services/devices";
-
+import { getDevice, prisma } from "../services/orm";
+import { Events } from "./Events";
+import { EVENT } from "./enum";
+import { SocketServer } from "../services/socket";
 const SIMULATION_DATA_PATH: { [key: string]: string } = {
   交流屏模拟量: "./emulation/电总交流屏模拟量/",
   交流屏状态量: "./emulation/电总交流屏状态量/",
@@ -14,6 +16,27 @@ const SIMULATION_DATA_PATH: { [key: string]: string } = {
   整流模块告警量: "./emulation/电总整流模块告警量/",
   直流屏模拟量: "./emulation/电总直流屏模拟量/",
 };
+
+/**
+ * 关闭串口
+ * @param port 需要关闭的串口
+ * @returns
+ */
+const closePort = (port: SerialPort) =>
+  new Promise((resolve) => {
+    if (port.isOpen) {
+      port.close((error: Error | null) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(true);
+        }
+      });
+    } else {
+      resolve(true);
+    }
+  });
+
 export class IDevice {
   instance: Device;
   port: SerialPort;
@@ -21,49 +44,75 @@ export class IDevice {
   buffer: Buffer = Buffer.alloc(0);
   isBusy: boolean = false;
   configuration: {
-    [key: string]: Signal[] | string;
+    [key: string]: Signal[] | { [key: string]: string };
   } = {};
-  commands: { [key: string]: string } = {};
   constructor(device: Device) {
     this.instance = device;
+    // 初始化串口
     this.port = new SerialPort(
       {
         path: this.instance.port,
         baudRate: this.instance.baudRate,
         autoOpen: true,
       },
-      (error: any) => {
-        this.status = "串口初始化失败";
+      (error: Error | null) => {
+        if (error) {
+          this.status = "串口初始化失败";
+        } else {
+          this.port
+            .pipe(new InterByteTimeoutParser({ interval: 100 }))
+            .on("data", (data: Buffer) => {
+              this.buffer = Buffer.concat([
+                this.buffer ?? Buffer.alloc(0),
+                data,
+              ]);
+            });
+        }
       }
     );
-    const configuration = fs.readFileSync(
-      path.join(process.cwd(), `/models/${this.instance.model}.json`),
-      "utf-8"
-    );
-    if (configuration) {
+    // 读取配置
+    try {
+      const configuration = fs.readFileSync(
+        path.join(process.cwd(), `/models/${this.instance.model}.json`),
+        "utf-8"
+      );
       this.configuration = JSON.parse(configuration);
+    } catch (e) {
+      this.setStatus("配置文件不存在");
+      return;
     }
     this.initialize();
   }
-  initialize() {}
+  // 初始化
+  protected initialize = async () => {};
 
-  getParser = (command: string) => {
+  // 获取当前命令解析函数
+  protected getParser = (command: string) => {
     switch (command) {
       default:
         return () => [] as Signal[];
     }
   };
 
-  getPayload = () => {
+  // 获取从串口中读取的数据
+  protected getPayload = () => {
     return Buffer.alloc(0);
   };
 
+  /**
+   * 组装命令
+   * @param command
+   * @returns
+   */
+  protected assembleCommand = (command: Buffer) => {
+    return command;
+  };
   /**
    * 根据命令获取设备实时数据
    * @param command 命令
    * @returns
    */
-  getDeviceValue = (command: string) => {
+  protected getDeviceValue = (command: string) => {
     return new Promise((resolve, reject) => {
       // 根据设备超时时间读取缓冲区
       setTimeout(async () => {
@@ -76,11 +125,9 @@ export class IDevice {
         this.buffer = Buffer.alloc(0);
         resolve(
           _.chain(response as unknown as Signal[])
-            .filter((it) => !!it.code)
-            .orderBy("name")
             .groupBy("code")
             .mapValues((values) =>
-              values.map((value, index) => ({
+              _.orderBy(values, ["name"]).map((value, index) => ({
                 ...value,
                 id: `${this.instance.code}-${this.instance.serial}-${
                   value.length === 1 ? 3 : 1
@@ -93,10 +140,32 @@ export class IDevice {
             .orderBy("name")
             .value()
         );
-      }, this.instance.timeout * 1000);
+      }, this.instance.timeout);
       // 发送命令
-      this.port?.write(Buffer.from(this.commands[command]));
+      this.port?.write(
+        this.assembleCommand(
+          Buffer.from(
+            (this.configuration["命令列表"] as { [key: string]: string })[
+              command
+            ]
+          )
+        )
+      );
     });
+  };
+  /**
+   * 获取当前数据库信息
+   */
+  public getCurrentState = async () => {
+    const device = await getDevice(this.instance.id);
+    this.instance = {
+      ...device,
+      signals: device!.signals.map((signal) => ({
+        ...signal,
+        enum: signal.enum ? JSON.parse(signal.enum) : undefined,
+      })),
+    } as Device;
+    this.status = "工作正常";
   };
   /**
    * 获取设备所有实时数据
@@ -105,55 +174,70 @@ export class IDevice {
    * @param activeSignals 当前命令列表
    * @returns
    */
-  getDeviceValues = async (commands: string[]) => {
+  public getDeviceValues = async (input?: string[]) => {
+    await this.getCurrentState();
     const values: Signal[] = [];
-    const errors: { name: string; error: string }[] = [];
-    try {
-      // 如果上一次没有完成，取消本次采样
-      if (this.isBusy) {
-        this.status = "设备忙碌";
-        return;
-      }
-      this.isBusy = true;
-      if (!this.port) {
-        this.status = "串口未初始化";
-        return;
-      }
-      // 如果串口没有打开则尝试打开串口
-      if (!this.port.isOpen) {
-        const opened = await new Promise((resolve, reject) => {
-          this.port.open((error) => {
-            if (error) {
-              this.status = "串口打开失败";
-              reject(error);
-            }
-            resolve(true);
-          });
-        });
-      }
-
-      // 根据设备命令获取设备实时数据
-      for (const command of commands) {
-        try {
-          // 每个命令尝试三次读取，如果三次都读取不到数据则报错
-          const values = (await attempt(() =>
-            this.getDeviceValue(command)
-          )) as Signal[];
-          // TODO 更新设备信息
-          for (const value of values) {
-            values.push(value);
-          }
-          this.updateDeviceValues(command, values);
-        } catch (error: any) {
-          errors.push({ name: command, error: error.message });
-        }
-      }
-    } catch (e: any) {
-      this.status = e.message;
-      return { values, errors };
-    } finally {
-      this.isBusy = false;
+    const errors: string[] = [];
+    // 如果上一次没有完成，取消本次采样
+    if (this.isBusy) {
+      this.status = "设备忙碌";
+      return;
     }
+    this.isBusy = true;
+    if (!this.port) {
+      this.status = "串口未初始化";
+      return;
+    }
+    // 如果串口没有打开则尝试打开串口
+    if (!this.port.isOpen) {
+      await new Promise((resolve, reject) => {
+        this.port.open((error) => {
+          if (error) {
+            this.status = "串口打开失败";
+            reject(error);
+          }
+          resolve(true);
+        });
+      });
+    }
+    const current = _.chain(this.instance.signals)
+      .map((it) => it.command)
+      .uniq()
+      .value();
+    const commands =
+      input ??
+      (current.length
+        ? current
+        : (_.keys(this.configuration["命令列表"]) as string[]));
+    // 根据设备命令获取设备实时数据
+    for (const command of commands) {
+      try {
+        // 每个命令尝试三次读取，如果三次都读取不到数据则报错
+        const v = (await attempt(() =>
+          this.getDeviceValue(command)
+        )) as Signal[];
+        // TODO 更新设备信息
+        for (const value of v) {
+          values.push(value);
+        }
+      } catch (error: any) {
+        errors.push(`设备命令[${command}]读取失败,错误信息:${error.message}`);
+        this.setStatus(
+          `设备命令[${command}]读取失败,错误信息:${error.message}`
+        );
+      }
+    }
+    this.isBusy = false;
+    SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
+      device: this.instance.name,
+      deviceId: this.instance.id,
+      status: this.status,
+      values,
+      errors,
+    });
+    this.updateDeviceValues(values);
+
+    return { values, errors };
   };
   /**
    * 返回模拟数据
@@ -162,7 +246,7 @@ export class IDevice {
    * @returns
    */
 
-  getSimulationValue = (command: string) => {
+  protected getSimulationValue = (command: string) => {
     this.buffer = Buffer.from(
       fs.readFileSync(
         `${SIMULATION_DATA_PATH[command]}${this.instance.model}`,
@@ -176,10 +260,9 @@ export class IDevice {
       const values =
         _.chain(data)
           .filter((it) => !!it.code)
-          .orderBy("name")
           .groupBy("code")
           .mapValues((values) =>
-            values.map((value, index) => ({
+            _.orderBy(values, ["name"]).map((value, index) => ({
               ...value,
               id: `${this.instance.code}-${this.instance.serial}-${
                 value.length === 1 ? 3 : 1
@@ -201,55 +284,84 @@ export class IDevice {
    * @param commands 命令
    * @returns
    */
-  getSimulationValues = async (commands: string[]) => {
+  public getSimulationValues = async (input?: string[]) => {
+    await this.getCurrentState();
     const values: Signal[] = [];
-    const errors: { name: string; error: string }[] = [];
-    try {
-      // 根据设备命令获取设备实时数据
-      for (const command of commands) {
-        try {
-          const v = this.getSimulationValue(command);
-          // TODO 更新设备信息
-          for (const value of v) {
-            values.push(value);
-          }
-          this.updateDeviceValues(command, v);
-        } catch (error: any) {
-          console.log(error);
-          errors.push({ name: command, error: error.message });
+    const errors: string[] = [];
+    const current = _.chain(this.instance.signals)
+      .map((it) => it.command)
+      .uniq()
+      .value();
+    const commands =
+      input ??
+      (current.length
+        ? current
+        : (_.keys(this.configuration["命令列表"]) as string[]));
+    // 根据设备命令获取设备实时数据
+    for (const command of commands) {
+      try {
+        const v = this.getSimulationValue(command);
+        // TODO 更新设备信息
+        for (const value of v) {
+          values.push(value);
         }
+      } catch (error: any) {
+        errors.push(`设备命令[${command}]读取失败,错误信息:${error.message}`);
+        this.setStatus(
+          `设备命令[${command}]读取失败,错误信息:${error.message}`
+        );
       }
-      return { values, errors };
-    } catch (e) {
-      errors.push({ name: this.instance.name, error: "设备错误" });
-      return { values, errors };
     }
+    SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
+      device: this.instance.name,
+      deviceId: this.instance.id,
+      status: this.status,
+      values,
+      errors,
+    });
+    this.updateDeviceValues(values);
+    return {
+      values: values.map((it) => ({
+        ...it,
+        threshold: 0,
+        thresholdPercent: 0,
+        startDelay: 0,
+        endDelay: 0,
+      })),
+      errors,
+    };
   };
   /**
    * 更新设备信息
    */
-  updateDeviceValues = async (command: string, values: Signal[]) => {
-    const signals = await prisma.signal.findMany({
-      where: {
-        deviceId: this.instance.id,
-        command,
-      },
-    });
-    const updated = _.keyBy(values, "offset");
+  protected updateDeviceValues = async (values: Signal[]) => {
+    const signals = this.instance.signals;
+    const updated = _.keyBy(values, "id");
     for (const signal of signals) {
-      const value = updated[signal.offset];
-      if (!value) {
-        console.log(signal);
-      }
-      await prisma.signal.update({
-        data: {
-          value: `${value.value}`,
-          raw: value.raw,
-        },
-        where: {
-          id: signal.id,
-        },
+      this.updateDeviceValue(signal, updated[signal.id]);
+    }
+  };
+  protected updateDeviceValue = async (prev: Signal, current: Signal) => {
+    // 如果当前无数据，则不更新
+    if (!current) {
+      return;
+    }
+    // 如果此采样点需要上报,则发送消息
+    if (!prev.ignore && prev.enabled && !prev.code.startsWith("X")) {
+      Events.emit(EVENT.VALUE_RECEIVED, {
+        deviceId: this.instance.id,
+        prev: prev.raw,
+        current: current.raw,
+        ...prev,
+        value: current.value,
       });
     }
+  };
+
+  protected setStatus = (message: string) => {
+    this.status = message;
+  };
+  public dispose = async () => {
+    await closePort(this.port);
   };
 }

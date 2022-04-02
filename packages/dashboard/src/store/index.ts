@@ -1,22 +1,51 @@
-import { useEffect } from "react";
 import create from "zustand";
 import _ from "lodash";
-import produce from "immer";
 import { request, useRequest } from "../hooks/useRequest";
 import shallow from "zustand/shallow";
+import produce from "immer";
 
 interface PmsStore {
   unit: Unit | null;
-  commands: Command[];
+  protocols: string[];
   ports: Port[];
   timestamp: number;
 }
 
+interface DashboardStore {
+  devices: {
+    [key: string]: {
+      device: string;
+      deviceId: number;
+      values: Signal[];
+      errors: string[];
+      status: string;
+    };
+  };
+  update: (updated: {
+    name: string;
+    deviceId: number;
+    values: Signal[];
+    errors: string[];
+    status: string;
+  }) => void;
+}
+
 export const useStore = create<PmsStore>((set) => ({
   unit: null,
-  commands: [],
+  protocols: [],
   ports: [],
   timestamp: new Date().getTime(),
+}));
+
+export const useDashboardStore = create<DashboardStore>((set) => ({
+  devices: {},
+  update: (device) =>
+    set(
+      produce((state: DashboardStore) => {
+        console.log("set", device);
+        state.devices = { ...state.devices, [device.deviceId]: device };
+      })
+    ),
 }));
 
 export const useSystem = () => {
@@ -26,7 +55,7 @@ export const useSystem = () => {
       request<{
         unit: Unit;
         ports: Port[];
-        commands: Command[];
+        protocols: string[];
       }>("/system"),
     {
       refreshDeps: [timestamp],
@@ -36,7 +65,3 @@ export const useSystem = () => {
     }
   );
 };
-
-interface SignalStore {
-  items: Signal[];
-}

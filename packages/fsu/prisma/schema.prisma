@@ -34,20 +34,25 @@ model Unit {
 }
 
 model Alarm {
-  id          Int      @id @default(autoincrement())
-  signal      String
-  value       String
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  active      Boolean  @default(true)
+  id               Int       @id @default(autoincrement())
+  deviceId         String
+  deviceResourceId String
+  signalId         String
+  signal           String
+  value            String
+  description      String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  occuredAt        DateTime  @default(now())
+  clearedAt        DateTime?
+  state            String?
 }
 
 model Device {
   id Int @id @default(autoincrement())
 
   code         String
-  serial       String
+  serial       String   @unique
   name         String
   controller   String   @default("")
   protocol     String   @default("")
@@ -56,6 +61,7 @@ model Device {
   version      String   @default("")
   manufacturer String   @default("")
   batch        String   @default("")
+  status       String   @default("工作正常")
 
   port     String  @unique
   activite Boolean @default(false)
@@ -76,7 +82,8 @@ model Signal {
   value            String
   normalValue      Int?
   unit             String?
-  command          String?
+  enum             String?
+  command          String
   offset           Int
   length           Int     @default(4)
   ignore           Boolean @default(false)
@@ -84,26 +91,31 @@ model Signal {
   upperMajorLimit  Float?
   lowerMinorLimit  Float?
   lowerMajorLimit  Float?
-  threshold        Float?
-  thresholdPercent Float?
+  threshold        Float?  @default(0)
+  thresholdPercent Float?  @default(0)
 
 
-  startDelay Int?
-  endDelay   Int?
-  enabled    Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
+  startDelay Int?      @default(0)
+  endDelay   Int?      @default(9)
+  enabled    Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  reportAt   DateTime?
+  interval   Int       @default(10)
+  alarm      Int?
 
   device   Device @relation(fields: [deviceId], references: [id])
   deviceId Int
 }
 
 model History {
-  id          Int      @id @default(autoincrement())
-  point       String
-  value       String
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  deviceId         String
+  deviceResourceId String
+  signal           String
+  signalId         String
+  value            String
+  description      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

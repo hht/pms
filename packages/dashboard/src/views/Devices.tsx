@@ -1,15 +1,6 @@
 import "../styles/index.scss";
 
-import {
-  Alert,
-  Button,
-  Card,
-  Descriptions,
-  Drawer,
-  message,
-  Modal,
-  Skeleton,
-} from "antd";
+import { Button, Card, Drawer, message, Modal } from "antd";
 import _ from "lodash";
 import { FC, Fragment, useRef } from "react";
 
@@ -28,17 +19,12 @@ import { useStore } from "../store";
 import { useReactive } from "ahooks";
 import Signals from "./Signals";
 
-const getModelList = (controller: string) => {
-  return _.chain(useStore.getState().commands)
-    .filter((it) => it.controller === controller)
-    .map((it) => it.model)
-    .flatten()
-    .uniq()
-    .value();
+const getModelList = () => {
+  return ["PSM-A"];
 };
 
 const Devices: FC = () => {
-  const { ports } = useStore((state) => state);
+  const { ports, protocols } = useStore((state) => state);
   const actionRef = useRef<ActionType>();
   const values = useReactive({
     visible: false,
@@ -49,6 +35,7 @@ const Devices: FC = () => {
       manual: true,
       onSuccess: () => {
         message.success("设备更新成功");
+        actionRef.current?.reload();
       },
     }
   );
@@ -73,6 +60,10 @@ const Devices: FC = () => {
     {
       title: "设备名称",
       dataIndex: "name",
+    },
+    {
+      title: "协议",
+      dataIndex: "protocol",
     },
     {
       title: "状态",
@@ -116,13 +107,13 @@ const Devices: FC = () => {
           initialValues={record}
           onFinish={async (values) => {
             await upsertDevice({ ...record, ...values });
-            actionRef.current?.reload();
             return true;
           }}
           trigger={<Button type="primary">编辑</Button>}
         ></BetaSchemaForm>,
         <Fragment key="config">
           <Button
+            disabled={record.activite}
             onClick={() => {
               values.visible = true;
             }}
@@ -136,7 +127,10 @@ const Devices: FC = () => {
             title="采样点配置"
             destroyOnClose
           >
-            <Signals device={record} />
+            <Signals
+              device={record}
+              onRequest={() => actionRef.current?.reload()}
+            />
           </Drawer>
         </Fragment>,
         <Button
@@ -190,6 +184,19 @@ const Devices: FC = () => {
       width: "m",
     },
     {
+      title: "协议",
+      dataIndex: "protocol",
+      valueEnum: _.keyBy(protocols),
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: "此项为必填项",
+          },
+        ],
+      },
+    },
+    {
       title: "设备类型",
       dataIndex: "controller",
       valueEnum: { 开关电源: "开关电源", 智能温湿度: "智能温湿度" },
@@ -216,7 +223,7 @@ const Devices: FC = () => {
               width: "m",
               valueType: "select",
               fieldProps: {
-                options: getModelList(controller),
+                options: getModelList(),
               },
               formItemProps: {
                 rules: [

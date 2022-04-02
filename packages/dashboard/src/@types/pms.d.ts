@@ -20,13 +20,16 @@ interface Device {
   id: number;
   name: string;
   controller: string;
+  commands: { [key: string]: string };
   model: string;
   port: string;
   code: string;
   serial: string;
   baudRate: number;
   timeout: number;
+  activite: boolean;
   updatedAt?: Date;
+  signals: Signal[];
 }
 
 interface Alarm {
@@ -72,41 +75,23 @@ interface Message {
   parsed?: Object;
 }
 
-interface Command {
-  id: string;
-  name: string;
-  command: Buffer;
-  model: string[];
-  preprocessor: (input: Buffer) => Buffer;
-  controller: string;
-  parser: (options: Signal[][]) => (input: Buffer) => Signal[];
-  options: {
-    [key: string]: Signal[];
-  };
-}
-
-interface Value {
-  name: string;
-  value: "B" | "F" | "I";
-  skip?: (value: number) => number;
-}
-
 interface Signal {
   id: string;
   name: string;
   length: number;
   code: string;
   ignore?: boolean;
-  lowerMinorLimit?: number;
-  lowerMajorLimit?: number;
-  upperMinorLimit?: number;
-  upperMajorLimit?: number;
+  lowerMinorLimit: number | null;
+  lowerMajorLimit: number | null;
+  upperMinorLimit: number | null;
+  upperMajorLimit: number | null;
   unit?: string;
   offset?: number;
+  enabled?: boolean;
   raw?: number;
   value?: string | number;
   threshold?: number;
-  ThresholdPercent?: number;
+  thresholdPercent?: number;
   startDelay?: number;
   endDelay?: number;
   normalValue?: string | number;

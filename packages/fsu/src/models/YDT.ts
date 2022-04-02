@@ -7,8 +7,8 @@ import {
   ALTERNATING_VOLTAGE,
   DIRECT_CURRENT,
   DIRECT_VOLTAGE,
-} from "../algorithm/enum";
-import { SIGNAL_CODE } from "../algorithm/enum";
+} from "./enum";
+import { SIGNAL_CODE } from "./enum";
 
 /**
  * 电总规定的返回码
@@ -68,23 +68,13 @@ const CHARGING_STATE: { [key: number]: string } = {
 };
 
 class YDT extends IDevice {
-  commands = {
-    交流屏模拟量: `200140410002FF`,
-    交流屏状态量: `200140430002FF`,
-    交流屏告警量: `200140440002FF`,
-    整流模块模拟量: `200140460000`,
-    整流模块状态量: `200140460000`,
-    整流模块告警量: `200140460000`,
-    直流屏模拟量: `200140460000`,
-  };
-
   /**
    * 分解电总协议长度数据
    * @param input 数据
    * @param offset 长度数据位移
    * @returns 返回计算的校验和，原高四位，长度值
    */
-  getLengthChecksum = (input: Buffer, offset: number) => {
+  private getLengthChecksum = (input: Buffer, offset: number) => {
     const values = _.chain(input.toString().substring(offset, offset + 4))
       .split("")
       .value();
@@ -105,7 +95,7 @@ class YDT extends IDevice {
    * @param input 原始数据
    * @returns 组装后的数据
    */
-  assembleCommand = (input: Buffer) => {
+  protected assembleCommand = (input: Buffer) => {
     const [checksum] = this.getLengthChecksum(input, 8);
     input.write(`${checksum.toString(16).toUpperCase()}`, 8);
     const sum = [...input.valueOf()].reduce((prev, curr) => prev + curr, 0);
@@ -128,7 +118,7 @@ class YDT extends IDevice {
    * @param divider 是否有DATAFLAG
    * @returns 返回去除首位标识和校验位的数据
    */
-  getPayload = (divider = true) => {
+  protected getPayload = (divider = true) => {
     // 匹配符合首尾标识的数据
     const response = /.*\~([^\~\r]*)\r.*/.exec(this.buffer.toString())?.[1];
     if (!response) {
@@ -181,9 +171,9 @@ class YDT extends IDevice {
         .value()
     );
   };
-  initialize = () => {};
+  protected initialize = async () => {};
 
-  getParser = (command: string) => {
+  protected getParser = (command: string) => {
     switch (command) {
       case "交流屏模拟量":
         return this.parseAlternatingValues;
@@ -206,7 +196,7 @@ class YDT extends IDevice {
   /**
    * 电总交流屏模拟量
    */
-  parseAlternatingValues = () => {
+  private parseAlternatingValues = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -294,7 +284,7 @@ class YDT extends IDevice {
   /**
    * 电总交流屏状态量
    */
-  parseAlternatingStatus = () => {
+  private parseAlternatingStatus = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -352,7 +342,7 @@ class YDT extends IDevice {
   /**
    * 电总交流屏告警量
    */
-  parseAlternatingAlarms = () => {
+  private parseAlternatingAlarms = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -519,7 +509,7 @@ class YDT extends IDevice {
   /**
    * 获取整流模块模拟量
    */
-  parseRectifierValues = () => {
+  private parseRectifierValues = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -584,7 +574,7 @@ class YDT extends IDevice {
    * 获取整流模块状态量
    * @returns
    */
-  parseRectifierStatus = () => {
+  private parseRectifierStatus = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -596,19 +586,16 @@ class YDT extends IDevice {
           name: "开机/关机状态",
           length: 1,
           enum: POWER_STATE,
-          normalValue: 0x00,
         },
         {
           name: "限流/不限流状态",
           length: 1,
           enum: THROTTLING_STATE,
-          normalValue: 0x00,
         },
         {
           name: "浮充/均充/测试状态",
           length: 1,
           enum: CHARGING_STATE,
-          normalValue: 0x00,
         },
       ]) {
         const value = data.readUInt8(offset);
@@ -648,7 +635,7 @@ class YDT extends IDevice {
    * 整流模块告警量
    * @returns
    */
-  parseRectifierAlarms = () => {
+  private parseRectifierAlarms = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -701,7 +688,7 @@ class YDT extends IDevice {
    * 直流屏模拟量
    * @returns
    */
-  parseDirectValues = () => {
+  private parseDirectValues = () => {
     const data = this.getPayload();
     let offset = 0;
     const response = [];
@@ -728,7 +715,7 @@ class YDT extends IDevice {
       const groupCount = data.readInt8(offset);
       offset += 1;
       for (let j = 0; j < groupCount; j++) {
-        for (const signal of [{ ...DIRECT_CURRENT, name: "电流" }]) {
+        for (const signal of [{ ...DIRECT_CURRENT, name: "充放电电流" }]) {
           response.push({
             ...signal,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
@@ -743,11 +730,11 @@ class YDT extends IDevice {
       const forkCount = data.readInt8(offset);
       offset += 1;
       for (let j = 0; j < forkCount; j++) {
-        for (const signal of [{ ...DIRECT_CURRENT, name: "电流" }]) {
+        for (const signal of [{ ...DIRECT_CURRENT, name: "分路电流" }]) {
           response.push({
             ...signal,
-            name: `直流屏#${i + 1}分路#${j + 1}${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.name}`,
+            name: `直流屏#${i + 1}${signal.name}#${j + 1}`,
+            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
             raw: data.readFloatLE(offset),
             code: SIGNAL_CODE[signal.name],
             offset,

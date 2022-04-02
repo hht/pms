@@ -2,17 +2,16 @@ import _ from "lodash";
 import { Express } from "express";
 import {
   deleteDevice,
-  getDevices,
   getSignals,
   getUnit,
   saveSignals,
   upsertDevice,
   upsertUnit,
-} from "../services/devices";
+} from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
-import { getPorts, getCommands } from "../services/system";
+import { getPorts } from "../services/system";
 import { useDeviceStore } from "../store";
-import { scheduleCron } from "../services/gather";
+import { DEVICES, scheduleCron } from "../services";
 
 /**
  * 局站相关信息接口
@@ -24,11 +23,11 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const unit = await getUnit();
       const ports = await getPorts();
-      const commands = await getCommands();
+      const protocols = ["电总", "Modbus"];
       res.json({
         unit,
         ports,
-        commands,
+        protocols,
       });
     })
   );
@@ -44,7 +43,10 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/devices",
     ExpressAsyncNext(async (req, res) => {
-      const devices = await getDevices();
+      const devices = DEVICES.map((it) => ({
+        ...it.instance,
+        commands: it.configuration["命令列表"],
+      }));
       res.json(devices);
     })
   );
@@ -81,12 +83,16 @@ export const getDeviceRoutes = (app: Express) => {
     "/config",
     ExpressAsyncNext(async (req, res) => {
       const { device, commands, values } = req.body;
+      const instance = DEVICES.find((it) => it.instance.id === device);
       if (commands) {
-        const response = await getDeviceConfig(device, commands);
-        res.json(response);
+        const { errors, values } =
+          (await instance?.getSimulationValues(commands)) ?? {};
+        res.json({
+          errors,
+          values: values?.map((it: Signal) => ({ ...it, enabled: true })),
+        });
       }
       if (values) {
-        console.log(device, values);
         await saveSignals(device, values);
         scheduleCron();
         res.json({ code: true, msg: "保存成功" });

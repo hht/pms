@@ -3,7 +3,6 @@
  */
 import OS from "os-utils";
 import { SerialPort } from "serialport";
-import { PROTOCOLS } from "../protocols";
 import _ from "lodash";
 
 /**
@@ -29,12 +28,4 @@ export const getSystemInfo = async () => {
  */
 export const getPorts = async () => {
   return await SerialPort.list();
-};
-
-/**
- * 获取系统支持的所有设备协议
- * @returns
- */
-export const getCommands = async () => {
-  return PROTOCOLS;
 };

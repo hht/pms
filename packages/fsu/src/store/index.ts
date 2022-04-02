@@ -3,18 +3,6 @@
  */
 import _ from "lodash";
 import create from "zustand/vanilla";
-
-export interface BufferStore {
-  [key: string]: Buffer;
-}
-
-/**
- * 各串口数据缓冲区
- */
-export const useBufferStore = create<BufferStore>(() => {
-  return {};
-});
-
 export interface DeviceStore {
   [key: string]: {
     values: { name: string; value: number | string }[];

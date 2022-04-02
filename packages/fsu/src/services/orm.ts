@@ -4,10 +4,12 @@
 import _ from "lodash";
 
 import { PrismaClient } from "@prisma/client";
-import { scheduleCron } from "./gather";
-import { DEVICE_CODE } from "../algorithm/enum";
+import { scheduleCron } from ".";
+import { DEVICE_CODE } from "../models/enum";
 
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({
+  errorFormat: "minimal",
+});
 
 /**
  * 获取局站信息
@@ -43,7 +45,12 @@ export const upsertUnit = async (unit: Unit) => {
  * @returns
  */
 export const getDevices = async () => {
-  return await prisma.device.findMany();
+  const devices = await prisma.device.findMany({
+    include: {
+      signals: true,
+    },
+  });
+  return devices;
 };
 
 /**
@@ -55,6 +62,9 @@ export const getDevice = async (id: number) => {
   return await prisma.device.findFirst({
     where: {
       id,
+    },
+    include: {
+      signals: true,
     },
   });
 };
@@ -69,7 +79,14 @@ export const upsertDevice = async (device: Device) => {
   const code = DEVICE_CODE[device.controller];
   if (device.id) {
     return await prisma.device.update({
-      data: { ..._.omitBy(device, _.isUndefined), code },
+      data: {
+        ..._.chain(device)
+          .omit("signals")
+          .omit("commands")
+          .omitBy(_.isUndefined)
+          .value(),
+        code,
+      },
       where: { id: device.id },
     });
   }
@@ -101,38 +118,35 @@ export const getSignals = async (id: number) => {
     },
   });
 };
+
 /**
  * 更新设备采样点信息
  */
-
 export const saveSignals = async (id: number, values: Signal[]) => {
-  console.log(
-    _.chain(values)
-      .map((it) => `${it.id}:${it.name}`)
-      .sort()
-      .value()
-  );
   const response = await prisma.$transaction(async (prisma) => {
     await prisma.signal.deleteMany({
       where: {
         deviceId: id,
       },
     });
-    const device = await prisma.device.findFirst({
-      where: {
-        id,
-      },
-    });
     for (const value of values) {
       await prisma.signal.create({
         data: {
-          ...(_.omit(value, ["enum", "deviceId", "index"]) as Signal & {
+          ...(_.omit(value, [
+            "enum",
+            "deviceId",
+            "index",
+            "updateAt",
+          ]) as Signal & {
             raw: number;
             value: string;
             normalValue: number;
             unit: string;
             offset: number;
           }),
+          enum: (value.enum
+            ? (JSON.stringify(value.enum) as string)
+            : null) as any,
           device: {
             connect: {
               id,

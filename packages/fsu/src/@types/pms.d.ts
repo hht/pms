@@ -20,6 +20,7 @@ interface Device {
   id: number;
   name: string;
   controller: string;
+  protocol: string;
   model: string;
   port: string;
   code: string;
@@ -28,17 +29,20 @@ interface Device {
   timeout: number;
   updatedAt: Date | null;
   activite: boolean;
+  signals: Signal[];
 }
 
 interface Alarm {
   id: string;
-  signal: Signal;
+  deviceId: string;
+  deviceResourceId: string;
+  signal: string;
   value: string;
   description: string;
   createdAt: string;
   updatedAt: string;
   active: boolean;
-  signalId: number;
+  signalId: string;
 }
 
 interface History {
@@ -73,45 +77,34 @@ interface Message {
   parsed?: Object;
 }
 
-interface Command {
-  id: string;
-  name: string;
-  command: Buffer;
-  model: string[];
-  preprocessor: (input: Buffer) => Buffer;
-  controller: string;
-  parser: (command: Command) => (input: Buffer) => Signal[];
-  options?: string[];
-}
-
-interface Value {
-  name: string;
-  value: "B" | "F" | "I";
-  skip?: (value: number) => number;
-}
-
 interface Signal {
   id: string;
   name: string;
   length: number;
   code: string;
   ignore?: boolean;
-  lowerMinorLimit?: number;
-  lowerMajorLimit?: number;
-  upperMinorLimit?: number;
-  upperMajorLimit?: number;
-  unit?: string;
-  offset?: number;
-  raw?: number;
-  value?: string | number;
-  threshold?: number;
-  ThresholdPercent?: number;
-  startDelay?: number;
-  endDelay?: number;
-  normalValue?: string | number;
-  enum?: {
+  lowerMinorLimit: number | null;
+  lowerMajorLimit: number | null;
+  upperMinorLimit: number | null;
+  upperMajorLimit: number | null;
+  unit: string | null;
+  enabled?: boolean;
+  offset: number | null;
+  raw: number | null;
+  command: string;
+  value: string | number | null;
+  threshold: number | null;
+  thresholdPercent?: number | null;
+  startDelay: number | null;
+  endDelay: number | null;
+  normalValue: string | number | null;
+  enum: {
     [key: number]: string | number;
   };
+  alarm: number | null;
+  reportAt: Date | null;
+  interval?: number;
+  updatedAt?: Date | string;
 }
 interface Component {
   name: string;
@@ -129,3 +122,9 @@ interface Template {
   protocol: string;
   components: { [key: string]: Signal[][] };
 }
+
+type Value = Signal & {
+  deviceId: string;
+  prev: number;
+  current: number;
+};

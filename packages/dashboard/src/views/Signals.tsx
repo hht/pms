@@ -7,12 +7,14 @@ import {
   Checkbox,
   ConfigProvider,
   Empty,
+  Input,
+  InputNumber,
+  InputNumberProps,
   message,
   Switch,
 } from "antd";
 import _ from "lodash";
 import { FC, useRef, useState } from "react";
-
 import {
   MinusCircleOutlined,
   SaveOutlined,
@@ -23,7 +25,6 @@ import ProTable, { ActionType } from "@ant-design/pro-table";
 import { request, useRequest } from "../hooks/useRequest";
 
 import type { ProColumns } from "@ant-design/pro-table";
-import { useStore } from "../store";
 import { useReactive } from "ahooks";
 
 const renderEmpty = () => (
@@ -33,31 +34,21 @@ const renderEmpty = () => (
   />
 );
 
-const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
+const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
+  device,
+  onRequest,
+}) => {
   const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
-
   const actionRef = useRef<ActionType>();
-  const { commands } = useStore((state) => state);
   const store = useReactive<{
     commands: string[];
     values: Signal[];
     errors: { name: string; error: string }[];
   }>({
     commands: [],
-    values: [],
+    values: device?.signals || [],
     errors: [],
   });
-
-  const { refresh } = useRequest<Signal[]>(
-    () => {
-      return request("/signal", { device: device!.id! });
-    },
-    {
-      onSuccess: (values) => {
-        store.values = values;
-      },
-    }
-  );
 
   const {
     run: getConfig,
@@ -68,7 +59,12 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
     errors: { name: string; error: string }[];
   }>(
     (commands: string[]) => {
-      return request("/config", { commands, device: device!.id! });
+      return request("/config", {
+        commands: _.keys(device!.commands).filter((it) =>
+          commands.includes(it)
+        ),
+        device: device!.id!,
+      });
     },
     {
       manual: true,
@@ -88,8 +84,8 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
     {
       manual: true,
       onSuccess: () => {
-        refresh();
         message.success("保存配置成功");
+        onRequest();
       },
     }
   );
@@ -137,12 +133,40 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
       ),
     },
     {
+      title: "是否上报",
+      dataIndex: "enabled",
+      valueType: "switch",
+      editable: false,
+      render: (text, record, _, action) =>
+        record.code?.startsWith("X") ? (
+          "未配置"
+        ) : (
+          <Switch
+            checked={record.enabled}
+            checkedChildren="是"
+            unCheckedChildren="否"
+            onChange={(checked) => {
+              store.values = store.values.map((it) =>
+                it.id === record.id ? { ...it, enabled: checked } : it
+              );
+            }}
+          />
+        ),
+    },
+    {
       title: "单位",
       dataIndex: "unit",
       formItemProps: {
         style: {
           width: "80px",
         },
+      },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <Input />
+        ) : (
+          record?.unit ?? "-"
+        );
       },
     },
 
@@ -155,6 +179,13 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           width: "80px",
         },
       },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber />
+        ) : (
+          record?.lowerMajorLimit ?? "-"
+        );
+      },
     },
     {
       title: "较低阈值",
@@ -164,6 +195,13 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
         style: {
           width: "80px",
         },
+      },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber />
+        ) : (
+          record?.lowerMinorLimit ?? "-"
+        );
       },
     },
 
@@ -176,6 +214,13 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           width: "80px",
         },
       },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber />
+        ) : (
+          record?.upperMinorLimit ?? "-"
+        );
+      },
     },
     {
       title: "过高阈值",
@@ -186,6 +231,13 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           width: "80px",
         },
       },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber />
+        ) : (
+          record?.upperMajorLimit ?? "-"
+        );
+      },
     },
     {
       title: "变化阈值",
@@ -195,6 +247,13 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
         style: {
           width: "100px",
         },
+      },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber />
+        ) : (
+          record?.threshold ?? "-"
+        );
       },
     },
     {
@@ -209,46 +268,29 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           width: "120px",
         },
       },
+      renderFormItem: (_, { isEditable, record }) => {
+        return record?.length !== 1 && isEditable ? (
+          <InputNumber addonAfter="%" />
+        ) : (
+          record?.thresholdPercent ?? "-"
+        );
+      },
     },
     {
       title: "操作",
       valueType: "option",
       width: 120,
       fixed: "right",
-      render: (text, record, _, action) =>
-        record.length == 1
-          ? [
-              <a
-                key="delete"
-                onClick={() => {
-                  store.values = store.values.filter(
-                    (it) => it.id !== record.id
-                  );
-                }}
-              >
-                删除
-              </a>,
-            ]
-          : [
-              <a
-                key="editable"
-                onClick={() => {
-                  action?.startEditable?.(record.id!);
-                }}
-              >
-                编辑
-              </a>,
-              <a
-                key="delete"
-                onClick={() => {
-                  store.values = store.values.filter(
-                    (it) => it.id !== record.id
-                  );
-                }}
-              >
-                删除
-              </a>,
-            ],
+      render: (text, record, _, action) => [
+        <a
+          key="editable"
+          onClick={() => {
+            action?.startEditable?.(record.id!);
+          }}
+        >
+          编辑
+        </a>,
+      ],
     },
   ];
 
@@ -277,24 +319,18 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           </Button>
         }
       >
-        {commands
-          .filter(
-            (it) =>
-              it.controller === device?.controller &&
-              it.model.includes(device.model!)
-          )
-          .map((it) => (
-            <Card.Grid key={it.id} style={{ width: "25%", textAlign: "left" }}>
-              <Checkbox
-                checked={store.commands.includes(it.id)}
-                onChange={() => {
-                  store.commands = _.xor(store.commands, [it.id]);
-                }}
-              >
-                {it.name}
-              </Checkbox>
-            </Card.Grid>
-          ))}
+        {_.keys(device?.commands).map((it) => (
+          <Card.Grid key={it} style={{ width: "25%", textAlign: "left" }}>
+            <Checkbox
+              checked={store.commands.includes(it)}
+              onChange={() => {
+                store.commands = _.xor(store.commands, [it]);
+              }}
+            >
+              {it}
+            </Checkbox>
+          </Card.Grid>
+        ))}
       </Card>
       <ConfigProvider renderEmpty={renderEmpty}>
         <ProTable<Partial<Signal>>
@@ -308,7 +344,7 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
           scroll={{ x: 2000 }}
           style={{ margin: -24, marginTop: 0 }}
           editable={{
-            type: "multiple",
+            type: "single",
             editableKeys,
             onSave: async (rowKey, data, row) => {
               store.values = store.values.map((it) =>
@@ -316,6 +352,7 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
               );
             },
             onChange: setEditableRowKeys,
+            actionRender: (row, config, dom) => [dom.save, dom.cancel],
           }}
           options={false}
           toolBarRender={() => [
@@ -331,13 +368,22 @@ const Signals: FC<{ device?: Partial<Device> }> = ({ device }) => {
             </Button>,
             <Button
               key="reset"
+              icon={<SyncOutlined />}
+              onClick={() => {
+                store.values = device?.signals || [];
+              }}
+            >
+              还原
+            </Button>,
+            <Button
+              key="clear"
               icon={<MinusCircleOutlined />}
               danger
               onClick={() => {
                 store.values = [];
               }}
             >
-              重置
+              清空
             </Button>,
           ]}
         />

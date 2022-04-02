@@ -3,7 +3,7 @@
  */
 import { appendCrc16, checkCrc16 } from "../algorithm/CRC";
 
-const PROTOCOLS: Command[] = [
+const PROTOCOLS: any[] = [
   {
     id: "53627350-2705-E8DB-8248-DACEE000144B",
     controller: "智能温湿度",
