@@ -2,10 +2,16 @@
  * 局站信息设置
  */
 import _ from "lodash";
-
+import { networkInterfaces } from 'os';
 import { PrismaClient } from "@prisma/client";
 import { scheduleCron } from ".";
 import { DEVICE_CODE } from "../models/enum";
+
+
+const getNetworkAddress = async ()=>{
+  const nets = networkInterfaces();
+  return nets['enp3s0']?.[0]?.address
+}
 
 export const prisma = new PrismaClient({
   errorFormat: "minimal",
@@ -16,11 +22,23 @@ export const prisma = new PrismaClient({
  * @returns
  */
 export const getUnit = async () => {
-  return await prisma.unit.findFirst({
+  const unit = await prisma.unit.findFirst({
     where: {
       id: 1,
     },
   });
+  if(!unit){
+    return await prisma.unit.create({
+      data:{
+        id:1,
+        ipAddress:await getNetworkAddress()??'',
+        port:8080,
+        manufacturer:'电服中心',
+        unitVersion:'1.01',
+      }
+    })
+  }
+  return unit
 };
 
 /**

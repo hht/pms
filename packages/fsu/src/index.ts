@@ -26,7 +26,7 @@ getDeviceRoutes(app);
 
 app.use(ExpressErrorHandler);
 server.listen(8080, () => {
-  console.log("动环系统目前正在8080端口运行...");
+  console.log("PMS-X动环监控模块目前正在8080端口运行...");
   const soap = createSoapServer(app);
   scheduleCron();
   soap.log = (type, data) => console.log(type, data);
