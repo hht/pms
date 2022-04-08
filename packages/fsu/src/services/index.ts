@@ -6,9 +6,12 @@ import schedule from "node-schedule";
 import _ from "lodash";
 import { IDevice } from "../models/Device";
 import { bootstrapDevice } from "../models/factory";
+import { SerialPort } from "serialport";
 
 const GLOBAL_INTERVAL = 10;
 export const DEVICES: IDevice[] = [];
+
+export const PORTS: { [key: string]: SerialPort } = {};
 
 /**
  * 重置所有设备
@@ -46,10 +49,10 @@ export const scheduleCron = async () => {
       // 如果设备没有暂停则执行获取设备实时数据操作
       if (device.instance.activite) {
         try {
-          await device.getSimulationValues();
+          await device.getDeviceValues();
           // const;
         } catch (e: any) {
-          console.log("错误处理", e.message, e.data);
+          console.log("错误处理", e, e.message, e.data);
         }
       }
     }

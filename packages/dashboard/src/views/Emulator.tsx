@@ -5,9 +5,16 @@ import HexEditor from "react-hex-editor";
 import oneDarkPro from "react-hex-editor/themes/oneDarkPro";
 import { useStore } from "../store";
 
-import useWebsocket from "../hooks/useSocket";
+import { Socket } from "socket.io-client";
 
-const Widget: FC = () => {
+const Widget: FC<{
+  message: Message | null;
+  socket: Socket | null;
+  readyState: {
+    key: number;
+    value: string;
+  };
+}> = ({ message, socket, readyState }) => {
   const { ports } = useStore((state) => state);
   const state = useReactive<{
     data: number[];
@@ -27,7 +34,6 @@ const Widget: FC = () => {
     protocol: undefined,
   });
 
-  const { message, socket, readyState } = useWebsocket(`http://localhost:8080`);
   return (
     <Card title="串口调试" extra={[<Tag key="state">{readyState.value}</Tag>]}>
       <Row gutter={16}>

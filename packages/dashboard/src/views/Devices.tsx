@@ -20,14 +20,14 @@ import { useReactive } from "ahooks";
 import Signals from "./Signals";
 
 const getModelList = () => {
-  return ["PSM-A"];
+  return ["PSM-A", "TH-01"];
 };
 
 const Devices: FC = () => {
   const { ports, protocols } = useStore((state) => state);
   const actionRef = useRef<ActionType>();
-  const values = useReactive({
-    visible: false,
+  const values = useReactive<{ current?: Partial<Device> }>({
+    current: undefined,
   });
   const { run: upsertDevice } = useRequest(
     (values) => request("/device", values),
@@ -86,6 +86,10 @@ const Devices: FC = () => {
       dataIndex: "port",
     },
     {
+      title: "地址(Modbus协议)",
+      dataIndex: "address",
+    },
+    {
       title: "超时设置",
       dataIndex: "timeout",
       render: (timeout) => {
@@ -115,23 +119,11 @@ const Devices: FC = () => {
           <Button
             disabled={record.activite}
             onClick={() => {
-              values.visible = true;
+              values.current = record;
             }}
           >
             配置
           </Button>
-          <Drawer
-            visible={values.visible}
-            onClose={() => (values.visible = false)}
-            width="100%"
-            title="采样点配置"
-            destroyOnClose
-          >
-            <Signals
-              device={record}
-              onRequest={() => actionRef.current?.reload()}
-            />
-          </Drawer>
         </Fragment>,
         <Button
           key="delete"
@@ -186,6 +178,7 @@ const Devices: FC = () => {
     {
       title: "协议",
       dataIndex: "protocol",
+      width: "m",
       valueEnum: _.keyBy(protocols),
       formItemProps: {
         rules: [
@@ -197,34 +190,19 @@ const Devices: FC = () => {
       },
     },
     {
-      title: "设备类型",
-      dataIndex: "controller",
-      valueEnum: { 开关电源: "开关电源", 智能温湿度: "智能温湿度" },
-      formItemProps: {
-        rules: [
-          {
-            required: true,
-            message: "此项为必填项",
-          },
-        ],
-      },
-    },
-    {
       valueType: "dependency",
+      width: "m",
       fieldProps: {
-        name: ["controller"],
+        name: ["protocol"],
       },
-      columns: ({ controller }) => {
-        if (controller) {
+      columns: ({ protocol }) => {
+        if (protocol === "Modbus") {
           return [
             {
-              dataIndex: "model",
-              title: "产品型号",
+              dataIndex: "address",
+              title: "地址",
               width: "m",
-              valueType: "select",
-              fieldProps: {
-                options: getModelList(),
-              },
+              valueType: "digit",
               formItemProps: {
                 rules: [
                   {
@@ -239,6 +217,38 @@ const Devices: FC = () => {
         return [];
       },
     },
+    {
+      title: "设备类型",
+      dataIndex: "controller",
+      width: "m",
+      valueEnum: { 组合开关电源: "组合开关电源", 智能温湿度: "智能温湿度" },
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: "此项为必填项",
+          },
+        ],
+      },
+    },
+    {
+      dataIndex: "model",
+      title: "产品型号",
+      width: "m",
+      valueType: "select",
+      fieldProps: {
+        options: getModelList(),
+      },
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: "此项为必填项",
+          },
+        ],
+      },
+    },
+
     {
       title: "串口号",
       dataIndex: "port",
@@ -290,40 +300,54 @@ const Devices: FC = () => {
   ];
 
   return (
-    <Card>
-      <ProTable<Partial<Device>>
-        headerTitle="设备列表"
-        rowKey="id"
-        bordered
-        columns={columns}
-        request={async (params) => {
-          const data = await request<Device[]>("/devices");
-          return { data };
-        }}
-        actionRef={actionRef}
-        search={false}
-        style={{ marginTop: 24 }}
-        toolBarRender={() => [
-          <BetaSchemaForm
-            formRef={formRef}
-            style={{ width: 200 }}
-            title="新增设备"
-            columns={proColumns}
-            layoutType="DrawerForm"
-            onFinish={async (values) => {
-              await upsertDevice(values);
-              actionRef.current?.reload();
-              return true;
-            }}
-            trigger={
-              <Button key="button" icon={<PlusOutlined />} type="primary">
-                新建
-              </Button>
-            }
-          ></BetaSchemaForm>,
-        ]}
-      />
-    </Card>
+    <>
+      <Card>
+        <ProTable<Partial<Device>>
+          headerTitle="设备列表"
+          rowKey="id"
+          bordered
+          columns={columns}
+          request={async (params) => {
+            const data = await request<Device[]>("/devices");
+            return { data };
+          }}
+          actionRef={actionRef}
+          search={false}
+          style={{ marginTop: 24 }}
+          toolBarRender={() => [
+            <BetaSchemaForm
+              formRef={formRef}
+              style={{ width: 200 }}
+              title="新增设备"
+              columns={proColumns}
+              layoutType="DrawerForm"
+              onFinish={async (values) => {
+                await upsertDevice(values);
+                actionRef.current?.reload();
+                return true;
+              }}
+              trigger={
+                <Button key="button" icon={<PlusOutlined />} type="primary">
+                  新建
+                </Button>
+              }
+            ></BetaSchemaForm>,
+          ]}
+        />
+      </Card>
+      <Drawer
+        visible={!!values.current}
+        onClose={() => (values.current = undefined)}
+        width="100%"
+        title="采样点配置"
+        destroyOnClose
+      >
+        <Signals
+          device={values.current}
+          onRequest={() => actionRef.current?.reload()}
+        />
+      </Drawer>
+    </>
   );
 };
 

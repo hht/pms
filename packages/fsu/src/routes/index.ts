@@ -86,7 +86,7 @@ export const getDeviceRoutes = (app: Express) => {
       const instance = DEVICES.find((it) => it.instance.id === device);
       if (commands) {
         const { errors, values } =
-          (await instance?.getSimulationValues(commands)) ?? {};
+          (await instance?.getDeviceValues(commands)) ?? {};
         res.json({
           errors,
           values: values?.map((it: Signal) => ({ ...it, enabled: true })),

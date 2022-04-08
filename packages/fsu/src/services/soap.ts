@@ -24,7 +24,7 @@ export const createSoapServer = (app: Express) => {
       console.log("SOAP服务器已启动...");
     }
   );
-  server.log = (type, data) => console.log(type, data);
+  // server.log = (type, data) => console.log(type, data);
   return server;
 };
 

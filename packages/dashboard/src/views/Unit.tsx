@@ -70,7 +70,7 @@ const Widget: FC = () => {
           },
         },
         {
-          title: "采样间隔",
+          title: "采样间隔(秒)",
           width: "s",
           dataIndex: "interval",
           valueType: "digit",

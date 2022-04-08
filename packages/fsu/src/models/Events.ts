@@ -101,14 +101,21 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
     const prevState = getSignalStates(recieved, recieved.prev);
     const currentState = getSignalStates(recieved, recieved.current);
     // 如果是模拟量且状态发生变化
-    if (recieved.length !== 0 && prevState !== currentState) {
+    if (
+      recieved.length !== 1 &&
+      (prevState !== currentState ||
+        (currentState !== "00" && !recieved.alarm) ||
+        (currentState === "00" && recieved.alarm))
+    ) {
       Events.emit(EVENT.ALARM_CHANGED, [prevState, currentState, data]);
     }
     // 如果是信号量且有正常值且值发生变化
     if (
-      recieved.length === 0 &&
+      recieved.length === 1 &&
       recieved.normalValue &&
-      recieved.prev !== recieved.current
+      (recieved.prev !== recieved.current ||
+        (currentState !== "00" && !recieved.alarm) ||
+        (currentState === "00" && recieved.alarm))
     ) {
       Events.emit(EVENT.ALARM_CHANGED, [prevState, currentState, data]);
     }
@@ -142,7 +149,7 @@ const alarmDisappeared = async (data: Value, id: number, delay?: number) => {
               SerialNo: signal.alarm,
               DeviceId: deviceId,
               DeviceRId: deviceResourceId,
-              AlarmTime: clearedAt,
+              AlarmTime: dayjs(clearedAt).format("YYYY-MM-DD HH:mm:ss"),
               TriggerVal: signal.value,
               AlarmFlag: "END",
               id: signalId,
@@ -199,7 +206,7 @@ const alarmOccured = async (data: Value, id: number) => {
         SerialNo: signal.alarm,
         DeviceId: deviceId,
         DeviceRId: deviceResourceId,
-        AlarmTime: alarm.occuredAt,
+        AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
         TriggerVal: alarm.value,
         AlarmFlag: "BEGIN",
         id: signalId,

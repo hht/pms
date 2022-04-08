@@ -8,12 +8,14 @@ import Devices from "./views/Devices";
 import Unit from "./views/Unit";
 import Dashboard from "./views/Dashboard";
 import { useSystem } from "./store";
+import useWebsocket from "./hooks/useSocket";
 
 const { Header, Content } = Layout;
 
 const App: FC = () => {
   const [current, setCurrent] = useState("1");
   useSystem();
+  const { message, socket, readyState } = useWebsocket(`http://localhost:8080`);
   return (
     <Layout>
       <Header>
@@ -34,7 +36,9 @@ const App: FC = () => {
         {current === "0" ? <Dashboard /> : null}
         {current === "1" ? <Unit /> : null}
         {current === "2" ? <Devices /> : null}
-        {current === "3" ? <Emulator /> : null}
+        {current === "3" ? (
+          <Emulator {...{ message, socket, readyState }} />
+        ) : null}
       </Content>
     </Layout>
   );

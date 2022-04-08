@@ -1,0 +1,25 @@
+{
+  "命令列表": {
+    "温湿度": [3, 0, 0, 0, 2]
+  },
+  "模拟量": [
+    {
+      "name": "室内环境湿度",
+      "unit": "%RH",
+      "length": 2,
+      "lowerMinorLimit": 30,
+      "lowerMajorLimit": 20,
+      "upperMinorLimit": 60,
+      "upperMajorLimit": 70
+    },
+    {
+      "name": "室内环境温度",
+      "unit": "℃",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    }
+  ]
+}

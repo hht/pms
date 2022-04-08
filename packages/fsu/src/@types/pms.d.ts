@@ -30,6 +30,7 @@ interface Device {
   updatedAt: Date | null;
   activite: boolean;
   signals: Signal[];
+  address?: number | null;
 }
 
 interface Alarm {

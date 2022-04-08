@@ -9,7 +9,6 @@ import {
   Empty,
   Input,
   InputNumber,
-  InputNumberProps,
   message,
   Switch,
 } from "antd";
@@ -301,6 +300,16 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
         type="warning"
         showIcon
       />
+      {store.errors.length ? (
+        <>
+          <Card style={{ marginTop: 20 }}>
+            {store.errors.map((error, index) => (
+              <Alert type="error" key={index} description={error}></Alert>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
       <Card
         title={loading ? "正在与设备通讯获取配置,请稍后.." : "设备支持命令列表"}
         style={{ marginTop: 20 }}
@@ -381,6 +390,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
               danger
               onClick={() => {
                 store.values = [];
+                store.errors = [];
               }}
             >
               清空

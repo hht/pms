@@ -62,8 +62,9 @@ model Device {
   manufacturer String   @default("")
   batch        String   @default("")
   status       String   @default("工作正常")
+  address      Int?     @default(1)
 
-  port     String  @unique
+  port     String
   activite Boolean @default(false)
   baudRate Int     @default(9600)
   timeout  Int     @default(3000)

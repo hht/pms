@@ -27,6 +27,7 @@ export const ALTERNATING_VOLTAGE: T = {
   upperMinorLimit: 240,
   upperMajorLimit: 250,
 };
+
 export const ALTERNATING_CURRENT: T = {
   name: "交流电流",
   unit: "A",
@@ -68,7 +69,7 @@ export const DIRECT_CURRENT: T = {
 
 export const DEVICE_CODE: { [key: string]: string } = {
   组合开关电源: "419",
-  温湿度传感器: "402",
+  智能温湿度: "911",
 };
 
 export const SIGNAL_CODE: { [key: string]: string } = {
@@ -104,6 +105,8 @@ export const SIGNAL_CODE: { [key: string]: string } = {
   模块通讯: "340",
   模块温度: "404",
   "模块限流点（百分数）": "A3B",
+  室内环境温度: "430",
+  室内环境湿度: "432",
   // 无规范定义数据，以X开始
   当前工作路号: "X01",
   "交流输入#1": "X02",

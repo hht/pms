@@ -57,6 +57,7 @@ const Dashboard: FC = () => {
     <>
       {_.values(devices).map((device) => (
         <Card
+          style={{ marginTop: 20 }}
           key={device.deviceId}
           title={device.device}
           extra={
@@ -67,17 +68,11 @@ const Dashboard: FC = () => {
         >
           {device.errors.length ? (
             <Card style={{ padding: 24 }}>
-              {device.errors.map((it) => (
-                <Alert>{it}</Alert>
+              {device.errors.map((it, index) => (
+                <Alert description={it} type="error" key={index}></Alert>
               ))}
             </Card>
-          ) : (
-            <Card style={{ padding: 24 }}>
-              {device.errors.map((it) => (
-                <Alert>{it}</Alert>
-              ))}
-            </Card>
-          )}
+          ) : null}
           {device.values.map((value) => (
             <Card.Grid
               hoverable={false}

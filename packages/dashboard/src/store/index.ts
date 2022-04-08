@@ -42,7 +42,6 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   update: (device) =>
     set(
       produce((state: DashboardStore) => {
-        console.log("set", device);
         state.devices = { ...state.devices, [device.deviceId]: device };
       })
     ),
@@ -60,7 +59,10 @@ export const useSystem = () => {
     {
       refreshDeps: [timestamp],
       onSuccess: (data) => {
-        useStore.setState({ ...data });
+        useStore.setState({
+          ...data,
+          ports: data.ports?.sort((a, b) => (a.path > b.path ? 1 : -1)),
+        });
       },
     }
   );
