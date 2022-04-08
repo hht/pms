@@ -16,6 +16,7 @@ export const EVENT = {
   ALARM_OCCURED: "BEGIN",
   ALARM_DISMISSED: "END",
   ALARM_SETTLE: "alarmSettle",
+  ERROR_LOG: "errorLog",
 };
 
 export const ALTERNATING_VOLTAGE: T = {

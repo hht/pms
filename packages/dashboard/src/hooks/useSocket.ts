@@ -36,7 +36,6 @@ const useWebsocket = (url: string) => {
         );
       });
       socket.on("valueReceived", (data) => {
-        console.log(data);
         useDashboardStore.getState().update(data);
       });
 

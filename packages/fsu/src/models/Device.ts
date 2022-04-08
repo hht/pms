@@ -3,8 +3,8 @@ import _, { reject } from "lodash";
 import { attempt } from "../utils";
 import fs from "fs";
 import path from "path";
-import { getDevice } from "../services/orm";
-import { Events } from "./Events";
+import { getDevice, prisma } from "../services/orm";
+import { Events } from "../services/rx";
 import { EVENT } from "./enum";
 import { SocketServer } from "../services/socket";
 import dayjs from "dayjs";
@@ -95,10 +95,12 @@ export class IDevice {
       );
       this.configuration = JSON.parse(configuration);
     } catch (e) {
+      Events.emit(EVENT.ERROR_LOG, `${this.instance.name}配置文件不存在`);
       this.setStatus("配置文件不存在");
       return;
     }
     this.initialize();
+    this.setStatus("工作正常");
   }
   // 初始化
   protected initialize = async () => {};
@@ -204,7 +206,6 @@ export class IDevice {
         enum: signal.enum ? JSON.parse(signal.enum) : undefined,
       })),
     } as Device;
-    this.status = "工作正常";
   };
   /**
    * 获取设备所有实时数据
@@ -214,13 +215,16 @@ export class IDevice {
    * @returns
    */
   public getDeviceValues = async (input?: string[]) => {
+    if (this.status !== "工作正常") {
+      return;
+    }
     await this.getCurrentState();
     const values: Signal[] = [];
     const errors: string[] = [];
     // 如果串口没有完成，等候串口可用
     const isFree = await this.awaitPort(dayjs().unix());
     if (!isFree) {
-      this.status = "串口状态忙碌";
+      this.setStatus("串口状态忙碌");
       return;
     }
     useSerialPortStore.getState().update(this.instance.port, {
@@ -233,7 +237,7 @@ export class IDevice {
           .getState()
           .ports[this.instance.port]?.port.open((error) => {
             if (error) {
-              this.status = "串口打开失败";
+              this.setStatus("串口打开失败");
               reject(error);
             }
             resolve(true);
@@ -264,7 +268,10 @@ export class IDevice {
           values.push(value);
         }
       } catch (error: any) {
-        console.log(error);
+        Events.emit(
+          EVENT.ERROR_LOG,
+          `设备命令[${command}]读取失败,错误信息:${error.message}`
+        );
         errors.push(`设备命令[${command}]读取失败,错误信息:${error.message}`);
         this.setStatus(
           `设备命令[${command}]读取失败,错误信息:${error.message}`
@@ -404,8 +411,16 @@ export class IDevice {
     }
   };
 
-  protected setStatus = (message: string) => {
+  protected setStatus = async (message: string) => {
     this.status = message;
+    await prisma.device.update({
+      data: {
+        status: message,
+      },
+      where: {
+        id: this.instance.id,
+      },
+    });
   };
   public dispose = async () => {};
 }

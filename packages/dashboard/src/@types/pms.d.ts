@@ -66,6 +66,11 @@ interface Port {
   timeout: number;
 }
 
+interface Log {
+  id: number;
+  description: string;
+  createdAt: Date;
+}
 interface Message {
   protocol: string;
   path: string;

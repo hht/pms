@@ -7,6 +7,8 @@ import _ from "lodash";
 import { IDevice } from "../models/Device";
 import { bootstrapDevice } from "../models/factory";
 import { SerialPort } from "serialport";
+import { Events } from "./rx";
+import { EVENT } from "../models/enum";
 
 const GLOBAL_INTERVAL = 10;
 export const DEVICES: IDevice[] = [];
@@ -52,7 +54,10 @@ export const scheduleCron = async () => {
           await device.getDeviceValues();
           // const;
         } catch (e: any) {
-          console.log("错误处理", e, e.message, e.data);
+          Events.emit(
+            EVENT.ERROR_LOG,
+            `${device.instance.name}内部错误,错误信息:${e.message}`
+          );
         }
       }
     }

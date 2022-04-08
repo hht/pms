@@ -1,10 +1,10 @@
 import { EventEmitter } from "events";
 import _ from "lodash";
 import { fromEvent, map, mergeAll, toArray, windowTime } from "rxjs";
-import { prisma } from "../services/orm";
-import { EVENT } from "./enum";
+import { prisma } from "./orm";
+import { EVENT } from "../models/enum";
 import dayjs from "dayjs";
-import { SoapClient } from "../services/soap";
+import { SoapClient } from "./soap";
 export class Events {
   static events: EventEmitter = new EventEmitter();
   static emit(event: string, data: any) {
@@ -166,7 +166,6 @@ const alarmDisappeared = async (data: Value, id: number, delay?: number) => {
             },
           });
         }
-
         await prisma.signal.update({
           data: {
             alarm: null,
@@ -216,9 +215,9 @@ const alarmOccured = async (data: Value, id: number) => {
   }, (data.startDelay || 0) * 1000);
 };
 
-// 采样点变化信息,每五秒更新一次
+// 采样点变化信息,每10秒批量上传一次
 const valueChanged$ = fromEvent(Events.events, EVENT.VALUE_CHANGED)
-  .pipe(windowTime(5000), map(toArray()), mergeAll())
+  .pipe(windowTime(10000), map(toArray()), mergeAll())
   .subscribe(async (data) => {
     const values = data as Value[];
     if (values.length) {
@@ -293,9 +292,9 @@ const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
   }
 );
 
-// 采样点变化信息,每五秒更新一次
+// 告警变化消息，每10秒批量上传一次
 const alarmChanged$ = fromEvent(Events.events, EVENT.ALARM_SETTLE)
-  .pipe(windowTime(5000), map(toArray()), mergeAll())
+  .pipe(windowTime(10000), map(toArray()), mergeAll())
   .subscribe(async (data) => {
     if (data.length) {
       const values = data.map((it) => ({ TAlarm: it }));
@@ -305,3 +304,15 @@ const alarmChanged$ = fromEvent(Events.events, EVENT.ALARM_SETTLE)
       });
     }
   });
+
+// 错误日志
+const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
+  async (data) => {
+    const value = data as string;
+    await prisma.log.create({
+      data: {
+        description: value,
+      },
+    });
+  }
+);

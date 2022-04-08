@@ -120,3 +120,11 @@ model History {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+}

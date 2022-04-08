@@ -4,6 +4,7 @@ import {
   deleteDevice,
   getSignals,
   getUnit,
+  prisma,
   saveSignals,
   upsertDevice,
   upsertUnit,
@@ -97,6 +98,30 @@ export const getDeviceRoutes = (app: Express) => {
         scheduleCron();
         res.json({ code: true, msg: "保存成功" });
       }
+    })
+  );
+
+  app.post(
+    "/logs",
+    ExpressAsyncNext(async (req, res) => {
+      const { current, pageSize } = req.body;
+      const total = await prisma.log.count();
+      const logs = await prisma.log.findMany({
+        skip: (current - 1) * pageSize,
+        take: pageSize,
+        orderBy: {
+          id: "desc",
+        },
+      });
+      res.json({ total, data: logs ?? {} });
+    })
+  );
+
+  app.post(
+    "/log",
+    ExpressAsyncNext(async (req, res) => {
+      await prisma.log.deleteMany();
+      res.json({});
     })
   );
 

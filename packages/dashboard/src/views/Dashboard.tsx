@@ -1,30 +1,9 @@
 import "../styles/index.scss";
 
-import {
-  Alert,
-  Button,
-  Card,
-  Drawer,
-  message,
-  Modal,
-  Statistic,
-  Tag,
-} from "antd";
+import { Alert, Card, Statistic, Tag } from "antd";
 import _ from "lodash";
-import { FC, Fragment, useRef } from "react";
-
-import { PlusOutlined } from "@ant-design/icons";
-import {
-  BetaSchemaForm,
-  ProFormColumnsType,
-  ProFormInstance,
-} from "@ant-design/pro-form";
-import ProTable, { ActionType } from "@ant-design/pro-table";
-
-import { request, useRequest } from "../hooks/useRequest";
-import type { ProColumns } from "@ant-design/pro-table";
+import { FC } from "react";
 import { useDashboardStore } from "../store";
-import { useReactive } from "ahooks";
 import shallow from "zustand/shallow";
 
 const getModelList = () => {

@@ -9,6 +9,7 @@ import Unit from "./views/Unit";
 import Dashboard from "./views/Dashboard";
 import { useSystem } from "./store";
 import useWebsocket from "./hooks/useSocket";
+import Log from "./views/Log";
 
 const { Header, Content } = Layout;
 
@@ -29,14 +30,16 @@ const App: FC = () => {
           <Menu.Item key="0">实时数据</Menu.Item>
           <Menu.Item key="1">局站信息</Menu.Item>
           <Menu.Item key="2">设备信息</Menu.Item>
-          <Menu.Item key="3">串口调试</Menu.Item>
+          <Menu.Item key="3">错误日志</Menu.Item>
+          <Menu.Item key="4">串口调试</Menu.Item>
         </Menu>
       </Header>
       <Content style={{ padding: 48 }}>
         {current === "0" ? <Dashboard /> : null}
         {current === "1" ? <Unit /> : null}
         {current === "2" ? <Devices /> : null}
-        {current === "3" ? (
+        {current === "3" ? <Log /> : null}
+        {current === "4" ? (
           <Emulator {...{ message, socket, readyState }} />
         ) : null}
       </Content>
