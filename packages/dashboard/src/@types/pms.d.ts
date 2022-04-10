@@ -36,13 +36,16 @@ interface Device {
 
 interface Alarm {
   id: string;
-  signal: Signal;
+  signal: string;
   value: string;
   description: string;
-  createdAt: string;
-  updatedAt: string;
-  active: boolean;
-  signalId: number;
+  createdAt: Date;
+  updatedAt: Date;
+  state: string;
+  signalId: string;
+  occuredAt: Date;
+  clearedAt: Date | null;
+  reported: boolean;
 }
 
 interface History {
