@@ -98,7 +98,7 @@ export const scheduleCron = async () => {
             Events.emit(
               EVENT.ERROR_LOG,
               `读取${device.instance.name}信息发生内部错误,错误信息:${
-                e.message || e || "无详细信息"
+                e.message || e || "未知错误"
               }`
             );
           }
