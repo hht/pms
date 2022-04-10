@@ -30,9 +30,6 @@ model Unit {
   updatedAt     DateTime  @updatedAt
   reportedAt    DateTime?
   heartBeat     Int       @default(6000)
-
-  devices Device[]
-
 }
 
 model Alarm {
@@ -72,8 +69,6 @@ model Device {
   baudRate Int     @default(9600)
   timeout  Int     @default(3000)
 
-  Unit      Unit?     @relation(fields: [unitId], references: [id])
-  unitId    Int?      @default(1)
   updatedAt DateTime?
   signals   Signal[]
 }
@@ -108,7 +103,7 @@ model Signal {
   interval   Int       @default(10)
   alarm      Int?
 
-  device   Device @relation(fields: [deviceId], references: [id])
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   deviceId Int
 }
 

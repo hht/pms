@@ -133,6 +133,7 @@ const Devices: FC = () => {
               onOk: async () => {
                 await request(`/device/${record.id}`).then(() => {
                   message.success("设备删除成功");
+                  actionRef.current?.reload()
                 });
               },
             });

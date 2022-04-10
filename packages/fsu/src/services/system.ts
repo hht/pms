@@ -3,7 +3,10 @@
  */
 import OS from "os-utils";
 import { SerialPort } from "serialport";
-import _ from "lodash";
+import _, { reject } from "lodash";
+import { wait } from "../utils";
+import { Events } from "./rx";
+import { EVENT } from "../models/enum";
 
 /**
  * 获取CPU使用情况
@@ -28,4 +31,76 @@ export const getSystemInfo = async () => {
  */
 export const getPorts = async () => {
   return await SerialPort.list();
+};
+
+const deleteUser = async () => {
+  console.log("修改FTP用户");
+};
+
+/**
+ * 修改FTP用户名和口令
+ */
+export const changeFtpUser = async (username: string, password: string) => {
+  return new Promise(async (resolve, reject) => {
+    const { exec } = require("child_process");
+    const { stdout } = await exec("/www/server/pure-ftpd/bin/pure-pw list");
+    stdout.on("data", async (data: any) => {
+      if (data) {
+        const users = data.toString().split("\n");
+        for (const line of users) {
+          const user = line.split("\t");
+          if (user[0]) {
+            await exec(
+              `/www/server/pure-ftpd/bin/pure-pw userdel ${user[0]}`,
+              (err: Error | null) => {
+                if (err) {
+                  Events.emit(
+                    EVENT.ERROR_LOG,
+                    `删除FTP用户失败,错误信息:${err.message}`
+                  );
+                  reject(`删除用户失败,错误信息:${err.message}`);
+                }
+              }
+            );
+          }
+        }
+      }
+    });
+    stdout.on("end", async () => {
+      console.log("删除成功，开始添加用户");
+      const { stdout, stdin } = await exec(
+        `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d /opt/node/pms/packages/fsu/firmware/`,
+        (err: Error | null) => {
+          if (err) {
+            Events.emit(
+              EVENT.ERROR_LOG,
+              `添加FTP用户失败,错误信息:${err.message}`
+            );
+            reject(err);
+          }
+        }
+      );
+      await wait(200);
+      stdin.write(`${password}\n`);
+      await wait(200);
+      stdin.write(`${password}\n`);
+      stdout.on("end", async () => {
+        await exec(
+          `/www/server/pure-ftpd/bin/pure-pw mkdb`,
+          async (err: Error | null) => {
+            if (err) {
+              Events.emit(
+                EVENT.ERROR_LOG,
+                `保存FTP数据失败,错误信息:${err.message}`
+              );
+              reject(err);
+            } else {
+              await exec("/etc/init.d/pure-ftpd restart");
+              resolve(true);
+            }
+          }
+        );
+      });
+    });
+  });
 };
