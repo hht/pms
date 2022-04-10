@@ -11,6 +11,7 @@ module.exports = {
       ignore_watch: ["node_modules", "logs", "database", "firmware"],
       args: "--no-warnings",
       node_args: "--no-warnings",
+      max_memory_restart: "500M",
     },
     {
       name: "系统更新服务",
