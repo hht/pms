@@ -17,6 +17,15 @@ const Widget: FC = () => {
       message.success("局站信息更新成功");
     },
   });
+  const { run: upsertFTP, loading } = useRequest(
+    (values) => request("/ftp", values),
+    {
+      manual: true,
+      onSuccess: () => {
+        message.success("FTP信息更新成功");
+      },
+    }
+  );
   const { run } = useRequest(() => request("/debug"), {
     manual: true,
   });
@@ -24,7 +33,6 @@ const Widget: FC = () => {
 
   const proColumns: ProFormColumnsType<Unit>[] = [
     {
-      title: "运行信息",
       valueType: "group",
       columns: [
         { title: "局站序号", dataIndex: "id", hideInForm: true },
@@ -66,53 +74,6 @@ const Widget: FC = () => {
       ],
     },
     {
-      title: "FTP配置",
-      valueType: "group",
-      columns: [
-        {
-          title: "IP地址",
-          dataIndex: "localAddress",
-          width: "s",
-          formItemProps: {
-            rules: [
-              {
-                required: true,
-                message: "请输入合法的IP地址",
-                pattern:
-                  /([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))(\.([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))){3}/,
-              },
-            ],
-          },
-        },
-        {
-          title: "端口号",
-          dataIndex: "port",
-          valueType: "digit",
-          width: "s",
-          formItemProps: {
-            rules: [
-              {
-                required: true,
-                message: "请输入正确的端口号",
-                pattern:
-                  /^(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[0-5]\d{4}|[1-9]\d{0,3})$/,
-              },
-            ],
-          },
-        },
-        {
-          title: "用户名",
-          width: "s",
-          dataIndex: "userName",
-        },
-        {
-          title: "密码",
-          width: "s",
-          dataIndex: "password",
-        },
-      ],
-    },
-    {
       title: "服务器信息",
       valueType: "group",
       columns: [
@@ -126,16 +87,59 @@ const Widget: FC = () => {
       ],
     },
   ];
+  const columns: ProFormColumnsType<Unit>[] = [
+    {
+      valueType: "group",
+      columns: [
+        {
+          title: "用户名",
+          width: "s",
+          dataIndex: "userName",
+          formItemProps: {
+            rules: [
+              {
+                required: true,
+                message: "此项为必填项",
+              },
+            ],
+          },
+        },
+        {
+          title: "密码",
+          width: "s",
+          valueType: "password",
+          dataIndex: "password",
+          formItemProps: {
+            rules: [
+              {
+                required: true,
+                message: "此项为必填项",
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ];
+
   return (
     <>
       <Card
         extra={
-          <Button htmlType="button" danger onClick={run} key="debug">
-            测试
+          <Button
+            htmlType="button"
+            danger
+            onClick={() => {
+              upsertUnit(unit);
+            }}
+          >
+            重启采集
           </Button>
         }
+        title="设备信息"
+        style={{ marginBottom: 20 }}
       >
-        <Descriptions column={2} title="设备信息" bordered>
+        <Descriptions column={2} bordered>
           <Descriptions.Item label="产品型号">{unit?.model}</Descriptions.Item>
           <Descriptions.Item label="生产厂家">
             {unit?.manufacturer}
@@ -148,7 +152,7 @@ const Widget: FC = () => {
           </Descriptions.Item>
         </Descriptions>
       </Card>
-      <Card>
+      <Card title="运行信息">
         {unit ? (
           <BetaSchemaForm<Unit>
             formRef={formRef}
@@ -160,23 +164,21 @@ const Widget: FC = () => {
               return true;
             }}
             layoutType="Form"
-            submitter={{
-              render: (props, doms) => {
-                return [
-                  ...doms,
-                  <Button
-                    htmlType="button"
-                    danger
-                    onClick={() => {
-                      upsertUnit(unit);
-                    }}
-                    key="restart"
-                  >
-                    重启采集
-                  </Button>,
-                ];
-              },
+          ></BetaSchemaForm>
+        ) : null}
+      </Card>
+      <Card title="FTP配置" style={{ marginTop: 20 }}>
+        {unit ? (
+          <BetaSchemaForm<Unit>
+            formRef={formRef}
+            columns={columns}
+            initialValues={{ ...unit }}
+            onFinish={async (values) => {
+              await upsertFTP({ ...values, id: unit.id });
+              useStore.setState({ timestamp: new Date().getTime() });
+              return true;
             }}
+            layoutType="Form"
           ></BetaSchemaForm>
         ) : null}
       </Card>
