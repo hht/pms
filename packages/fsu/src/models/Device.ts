@@ -27,25 +27,7 @@ const wait = (delay: number) =>
     }, delay);
   });
 
-/**
- * 关闭串口
- * @param port 需要关闭的串口
- * @returns
- */
-const closePort = (port: SerialPort) =>
-  new Promise((resolve) => {
-    if (port.isOpen) {
-      port.close((error: Error | null) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(true);
-        }
-      });
-    } else {
-      resolve(true);
-    }
-  });
+
 
 export class IDevice {
   instance: Device;
@@ -66,7 +48,7 @@ export class IDevice {
         },
         (error: Error | null) => {
           if (error) {
-            Events.emit(EVENT.ERROR_LOG, `串口${this.instance.port}初始化失败`);
+            Events.emit(EVENT.ERROR_LOG, `串口${this.instance.port}初始化失败,错误信息:${error.message||error}`);
             this.status = "串口初始化失败";
           } else {
             port
@@ -268,6 +250,7 @@ export class IDevice {
         // TODO 更新设备信息
         for (const value of v) {
           values.push({
+            ...value,
             ...signals[value.id],
             raw: value.raw,
             value:

@@ -37,7 +37,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/unit",
     ExpressAsyncNext(async (req, res) => {
       const unit = await upsertUnit(req.body);
-      scheduleCron();
+      await scheduleCron();
       res.json(unit);
     })
   );
@@ -57,7 +57,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/device",
     ExpressAsyncNext(async (req, res) => {
       const devices = await upsertDevice(req.body);
-      scheduleCron();
+      await scheduleCron();
       res.json(devices);
     })
   );
@@ -67,7 +67,7 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const { id } = req.params;
       const devices = await deleteDevice(parseInt(id));
-      scheduleCron();
+      await scheduleCron();
       res.json(devices);
     })
   );
@@ -96,9 +96,33 @@ export const getDeviceRoutes = (app: Express) => {
       }
       if (values) {
         await saveSignals(device, values);
-        scheduleCron();
+        await scheduleCron();
         res.json({ code: true, msg: "保存成功" });
       }
+    })
+  );
+
+  app.post(
+    "/boot",
+    ExpressAsyncNext(async (req, res) => {
+        await scheduleCron();
+        res.json({ code: true, msg: "系统已重启" });
+    })
+  );
+
+  app.post(
+    "/alarms",
+    ExpressAsyncNext(async (req, res) => {
+      const { current, pageSize } = req.body;
+      const total = await prisma.alarm.count();
+      const alarms = await prisma.alarm.findMany({
+        skip: (current - 1) * pageSize,
+        take: pageSize,
+        orderBy: {
+          id: "desc",
+        },
+      });
+      res.json({ total, data: alarms ?? {} });
     })
   );
 

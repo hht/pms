@@ -14,6 +14,26 @@ import { SoapClient } from "./soap";
 
 export const DEVICES: IDevice[] = [];
 
+/**
+ * 关闭串口
+ * @param port 需要关闭的串口
+ * @returns
+ */
+ const closePort = (port: SerialPort) =>
+ new Promise((resolve,reject) => {
+   if (port.isOpen) {
+     port.close((error: Error | null) => {
+       if (error) {
+         reject(error);
+       } else {
+         resolve(true);
+       }
+     });
+   } else {
+     resolve(true);
+   }
+ });
+
 export const PORTS: { [key: string]: SerialPort } = {};
 
 /**
