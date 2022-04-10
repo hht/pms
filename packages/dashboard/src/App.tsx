@@ -10,13 +10,15 @@ import Dashboard from "./views/Dashboard";
 import { useSystem } from "./store";
 import useWebsocket from "./hooks/useSocket";
 import Log from "./views/Log";
+import { baseURL } from "./config";
+import Alarms from "./views/Alarms";
 
 const { Header, Content } = Layout;
 
 const App: FC = () => {
   const [current, setCurrent] = useState("1");
   useSystem();
-  const { message, socket, readyState } = useWebsocket(`http://localhost:8080`);
+  const { message, socket, readyState } = useWebsocket(baseURL);
   return (
     <Layout>
       <Header>
@@ -30,16 +32,18 @@ const App: FC = () => {
           <Menu.Item key="0">实时数据</Menu.Item>
           <Menu.Item key="1">局站信息</Menu.Item>
           <Menu.Item key="2">设备信息</Menu.Item>
-          <Menu.Item key="3">错误日志</Menu.Item>
-          <Menu.Item key="4">串口调试</Menu.Item>
+          <Menu.Item key="3">告警日志</Menu.Item>
+          <Menu.Item key="4">错误日志</Menu.Item>
+          <Menu.Item key="5">串口调试</Menu.Item>
         </Menu>
       </Header>
       <Content style={{ padding: 48 }}>
         {current === "0" ? <Dashboard /> : null}
         {current === "1" ? <Unit /> : null}
         {current === "2" ? <Devices /> : null}
-        {current === "3" ? <Log /> : null}
-        {current === "4" ? (
+        {current === "3" ? <Alarms /> : null}
+        {current === "4" ? <Log /> : null}
+        {current === "5" ? (
           <Emulator {...{ message, socket, readyState }} />
         ) : null}
       </Content>
