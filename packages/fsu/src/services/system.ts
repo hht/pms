@@ -3,12 +3,13 @@
  */
 import OS from "os-utils";
 import { SerialPort } from "serialport";
-import _, { reject } from "lodash";
+import _ from "lodash";
 import { wait } from "../utils";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import compressing from "compressing";
-import { watch } from "fs";
+import { stat, watchFile } from "fs";
+import dayjs from "dayjs";
 /**
  * 获取CPU使用情况
  * @returns
@@ -127,19 +128,27 @@ export const setTime = async (time: string) => {
 };
 
 /**
- * 读取系统更新信息
+ * 如果上传了系统更新文件，则更新系统
  */
 
 export const watchUpdate = async () => {
-  watch("/opt/node/pms/firmware/", async (event, filename) => {
-    switch (event) {
-      case "change":
-        if (filename && filename.endsWith(".zip")) {
-          compressing.zip.uncompress(
-            "/opt/node/pms/firmware/" + filename,
+  watchFile(
+    "/opt/node/pms/firmware/update.zip",
+    { interval: 5000 },
+    (curr, prev) => {
+      if (dayjs(curr.mtime).diff() > 5 * 1000) {
+        compressing.zip
+          .uncompress(
+            "/opt/node/pms/firmware/update.zip",
             "/opt/node/pms/packages/"
-          );
-        }
+          )
+          .catch((e) => {
+            Events.emit(
+              EVENT.ERROR_LOG,
+              `解压系统更新包失败,错误信息:${e.message}`
+            );
+          });
+      }
     }
-  });
+  );
 };
