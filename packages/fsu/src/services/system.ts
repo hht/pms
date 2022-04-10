@@ -7,7 +7,7 @@ import _, { reject } from "lodash";
 import { wait } from "../utils";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
-import compressing from 'compressing'
+import compressing from "compressing";
 import { watch } from "fs";
 /**
  * 获取CPU使用情况
@@ -70,7 +70,7 @@ export const changeFtpUser = async (username: string, password: string) => {
     stdout.on("end", async () => {
       console.log("删除成功，开始添加用户");
       const { stdout, stdin } = await exec(
-        `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d /opt/node/pms/fsu/firmware/`,
+        `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d /opt/node/pms/firmware/`,
         (err: Error | null) => {
           if (err) {
             Events.emit(
@@ -131,12 +131,15 @@ export const setTime = async (time: string) => {
  */
 
 export const watchUpdate = async () => {
-  watch('/opt/node/pms/firmware/', async (event, filename) => {
-    switch(event){
-      case 'change':
-        if(filename && filename.endsWith('.zip')){
-          compressing.zip.uncompress('/opt/node/pms/firmware/' + filename, '/opt/node/pms/packages/')
+  watch("/opt/node/pms/firmware/", async (event, filename) => {
+    switch (event) {
+      case "change":
+        if (filename && filename.endsWith(".zip")) {
+          compressing.zip.uncompress(
+            "/opt/node/pms/firmware/" + filename,
+            "/opt/node/pms/packages/"
+          );
         }
     }
-  })
-}
+  });
+};
