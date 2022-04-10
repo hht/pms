@@ -4,7 +4,8 @@ interface Unit {
   password: string;
   unitId: string;
   resourceId: string;
-  ipAddress: string;
+  localAddress: string;
+  remoteAddress: string;
   port: number;
   manufacturer: string;
   model: string;
@@ -29,6 +30,7 @@ interface Device {
   timeout: number;
   activite: boolean;
   updatedAt?: Date;
+  productionAt: Date;
   signals: Signal[];
 }
 

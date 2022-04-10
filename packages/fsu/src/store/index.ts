@@ -6,21 +6,6 @@ import { SerialPort } from "serialport";
 import create from "zustand/vanilla";
 import produce from "immer";
 
-export interface DeviceStore {
-  [key: string]: {
-    values: { name: string; value: number | string }[];
-    error?: string;
-    timestamp: number;
-    busy: boolean;
-  };
-}
-/**
- * 各设备实时数据
- */
-export const useDeviceStore = create<DeviceStore>(() => {
-  return {};
-});
-
 /**
  * 系统串口信息
  */
@@ -47,3 +32,5 @@ export const useSerialPortStore = create<SerialPortStore>((set) => ({
       })
     ),
 }));
+
+export const useUnitStore = create<Partial<Unit>>((set) => ({}));

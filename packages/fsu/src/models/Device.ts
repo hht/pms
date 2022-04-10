@@ -66,6 +66,7 @@ export class IDevice {
         },
         (error: Error | null) => {
           if (error) {
+            Events.emit(EVENT.ERROR_LOG, `串口${this.instance.port}初始化失败`);
             this.status = "串口初始化失败";
           } else {
             port
@@ -219,6 +220,7 @@ export class IDevice {
       return;
     }
     await this.getCurrentState();
+    const signals = _.keyBy(this.instance.signals, "id");
     const values: Signal[] = [];
     const errors: string[] = [];
     // 如果串口没有完成，等候串口可用
@@ -265,9 +267,19 @@ export class IDevice {
         )) as Signal[];
         // TODO 更新设备信息
         for (const value of v) {
-          values.push(value);
+          values.push({
+            ...signals[value.id],
+            raw: value.raw,
+            value:
+              value.length === 1
+                ? value.enum[value.raw!]
+                : `${value.raw?.toFixed(2)}${value.unit}`,
+          });
         }
       } catch (error: any) {
+        useSerialPortStore.getState().update(this.instance.port, {
+          buffer: Buffer.alloc(0),
+        });
         Events.emit(
           EVENT.ERROR_LOG,
           `设备命令[${command}]读取失败,错误信息:${error.message}`
@@ -281,6 +293,7 @@ export class IDevice {
     useSerialPortStore.getState().update(this.instance.port, {
       busy: false,
     });
+
     SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
       device: this.instance.name,
       deviceId: this.instance.id,
@@ -404,8 +417,8 @@ export class IDevice {
       Events.emit(EVENT.VALUE_RECEIVED, {
         deviceId: this.instance.id,
         prev: prev.raw,
-        current: current.raw,
         ...prev,
+        raw: current.raw,
         value: current.value,
       });
     }

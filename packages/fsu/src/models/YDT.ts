@@ -227,7 +227,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
             raw: data.readFloatLE(offset),
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -243,9 +242,6 @@ class YDT extends IDevice {
             response.push({
               ...signal,
               name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-              value: `${data.readFloatLE(offset).toFixed(2)}${
-                signal.unit ?? ""
-              }`,
               raw: data.readFloatLE(offset),
               code: SIGNAL_CODE[signal.name],
               offset,
@@ -271,7 +267,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `交流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -309,7 +304,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-            value: signal.enum![value],
             raw: value,
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -329,7 +323,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `交流屏#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -402,7 +395,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-            value: signal.enum![value],
             raw: value,
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -429,7 +421,6 @@ class YDT extends IDevice {
             response.push({
               ...signal,
               name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-              value: signal.enum![value],
               raw: value,
               code: SIGNAL_CODE[signal.name],
               offset,
@@ -449,7 +440,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `交流屏#${i + 1}${signal.name}`,
-            value: signal.enum![value],
             raw: value,
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -496,7 +486,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `交流屏#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -522,7 +511,6 @@ class YDT extends IDevice {
       response.push({
         ...signal,
         name: signal.name,
-        value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
         raw: data.readFloatLE(offset),
         code: SIGNAL_CODE[signal.name],
         offset,
@@ -542,7 +530,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `整流模块#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -560,7 +547,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: signal.name,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -602,7 +588,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -621,7 +606,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -654,7 +638,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -673,7 +656,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `整流模块#${i + 1}${signal.name}`,
-          value: signal.enum![value],
           raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -705,7 +687,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `直流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -719,7 +700,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
             raw: data.readFloatLE(offset),
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -734,7 +714,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `直流屏#${i + 1}${signal.name}#${j + 1}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
             raw: data.readFloatLE(offset),
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -751,7 +730,6 @@ class YDT extends IDevice {
           response.push({
             ...signal,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
-            value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
             raw: data.readFloatLE(offset),
             code: SIGNAL_CODE[signal.name],
             offset,
@@ -767,7 +745,6 @@ class YDT extends IDevice {
         response.push({
           ...signal,
           name: `直流屏#${i + 1}${signal.name}`,
-          value: `${data.readFloatLE(offset).toFixed(2)}${signal.unit ?? ""}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,

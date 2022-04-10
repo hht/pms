@@ -1,5 +1,3 @@
-import "../styles/index.scss";
-
 import { Alert, Card, Statistic, Tag } from "antd";
 import _ from "lodash";
 import { FC } from "react";
@@ -45,13 +43,16 @@ const Dashboard: FC = () => {
             </div>
           }
         >
-          {device.errors.length ? (
-            <Card style={{ padding: 24 }}>
-              {device.errors.map((it, index) => (
-                <Alert description={it} type="error" key={index}></Alert>
-              ))}
-            </Card>
-          ) : null}
+          {device.errors.length
+            ? device.errors.map((it, index) => (
+                <Alert
+                  description={it}
+                  style={{ marginBottom: 10 }}
+                  type="error"
+                  key={index}
+                ></Alert>
+              ))
+            : null}
           {device.values.map((value) => (
             <Card.Grid
               hoverable={false}

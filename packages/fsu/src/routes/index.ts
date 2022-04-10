@@ -11,8 +11,8 @@ import {
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
 import { getPorts } from "../services/system";
-import { useDeviceStore } from "../store";
 import { DEVICES, scheduleCron } from "../services";
+import { transmitLocalRecords } from "../services/soap";
 
 /**
  * 局站相关信息接口
@@ -37,6 +37,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/unit",
     ExpressAsyncNext(async (req, res) => {
       const unit = await upsertUnit(req.body);
+      scheduleCron();
       res.json(unit);
     })
   );
@@ -124,13 +125,11 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({});
     })
   );
-
   app.post(
-    "/monit/:id",
+    "/debug",
     ExpressAsyncNext(async (req, res) => {
-      const { id } = req.params;
-      const state = useDeviceStore.getState()[id];
-      res.json(state ?? {});
+      const values = await transmitLocalRecords("SEND_AIDATA", 203);
+      res.json(values);
     })
   );
 };

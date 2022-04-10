@@ -11,7 +11,8 @@ type T = Pick<
 
 export const EVENT = {
   VALUE_RECEIVED: "valueReceived",
-  VALUE_CHANGED: "valueChanged",
+  ANALOG_VALUE_CHANGED: "analogValueChanged",
+  DIGITAL_VALIE_CHANGED: "digitalValueChanged",
   ALARM_CHANGED: "alarmChanged",
   ALARM_OCCURED: "BEGIN",
   ALARM_DISMISSED: "END",

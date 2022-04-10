@@ -4,7 +4,8 @@ interface Unit {
   password?: string;
   unitId?: string;
   resourceId?: string;
-  ipAddress: string;
+  localAddress: string;
+  remoteAddress: string;
   port: number;
   manufacturer?: string;
   model?: string;
@@ -14,12 +15,14 @@ interface Unit {
   createdAt: Date;
   updatedAt: Date;
   reportedAt?: Date;
+  heartBeat: number;
 }
 
 interface Device {
   id: number;
   name: string;
   controller: string;
+  resourceId: string;
   protocol: string;
   model: string;
   port: string;
@@ -28,6 +31,7 @@ interface Device {
   baudRate: number;
   timeout: number;
   updatedAt: Date | null;
+  productionAt: Date | null;
   activite: boolean;
   signals: Signal[];
   address?: number | null;
@@ -44,6 +48,7 @@ interface Alarm {
   updatedAt: string;
   active: boolean;
   signalId: string;
+  reported: boolean;
 }
 
 interface History {
@@ -127,5 +132,4 @@ interface Template {
 type Value = Signal & {
   deviceId: string;
   prev: number;
-  current: number;
 };

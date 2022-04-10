@@ -1,4 +1,4 @@
-import { Button, Card, message } from "antd";
+import { Button, Card, Descriptions, message } from "antd";
 import { FC, useRef } from "react";
 
 import {
@@ -16,6 +16,9 @@ const Widget: FC = () => {
     onSuccess: () => {
       message.success("局站信息更新成功");
     },
+  });
+  const { run } = useRequest(() => request("/debug"), {
+    manual: true,
   });
   const formRef = useRef<ProFormInstance>();
 
@@ -39,8 +42,36 @@ const Widget: FC = () => {
           },
         },
         {
+          title: "采样间隔(秒)",
+          width: "s",
+          tooltip:
+            "采样间隔取决于设备数量，最低60秒，如设备比较多，可以适当增加此数值",
+          dataIndex: "interval",
+          valueType: "digit",
+          fieldProps: {
+            min: 10,
+            precision: 0,
+          },
+        },
+        {
+          title: "心跳间隔(秒)",
+          width: "s",
+          dataIndex: "heartBeat",
+          valueType: "digit",
+          fieldProps: {
+            min: 10,
+            precision: 0,
+          },
+        },
+      ],
+    },
+    {
+      title: "FTP配置",
+      valueType: "group",
+      columns: [
+        {
           title: "IP地址",
-          dataIndex: "ipAddress",
+          dataIndex: "localAddress",
           width: "s",
           formItemProps: {
             rules: [
@@ -70,72 +101,86 @@ const Widget: FC = () => {
           },
         },
         {
-          title: "采样间隔(秒)",
+          title: "用户名",
           width: "s",
-          dataIndex: "interval",
-          valueType: "digit",
+          dataIndex: "userName",
+        },
+        {
+          title: "密码",
+          width: "s",
+          dataIndex: "password",
         },
       ],
     },
-
     {
-      title: "设备信息",
+      title: "服务器信息",
       valueType: "group",
       columns: [
         {
-          title: "生产厂家",
-          width: "s",
-          dataIndex: "manufacturer",
-        },
-        {
-          title: "产品型号",
-          width: "s",
-          dataIndex: "model",
-        },
-        {
-          title: "软件版本号",
-          width: "s",
-          dataIndex: "version",
-        },
-        {
-          title: "基站版本号",
-          width: "s",
-          dataIndex: "unitVersion",
+          valueType: "textarea",
+          tooltip:
+            "以逗号分隔,格式示例:http://127.0.0.1:8080/services/SCService?wsdl",
+          width: "xl",
+          dataIndex: "remoteAddress",
         },
       ],
     },
   ];
   return (
-    <Card>
-      {unit ? (
-        <BetaSchemaForm<Unit>
-          formRef={formRef}
-          columns={proColumns}
-          initialValues={{ ...unit }}
-          onFinish={async (values) => {
-            await upsertUnit({ ...values, id: unit.id });
-            useStore.setState({ timestamp: new Date().getTime() });
-            return true;
-          }}
-          layoutType="Form"
-          submitter={{
-            render: (props, doms) => {
-              return [
-                ...doms,
-                <Button
-                  htmlType="button"
-                  danger
-                  onClick={() => {}}
-                  key="restart"
-                >
-                  重启采集
-                </Button>,
-              ];
-            },
-          }}
-        ></BetaSchemaForm>
-      ) : null}
-    </Card>
+    <>
+      <Card
+        extra={
+          <Button htmlType="button" danger onClick={run} key="debug">
+            测试
+          </Button>
+        }
+      >
+        <Descriptions column={2} title="设备信息" bordered>
+          <Descriptions.Item label="产品型号">{unit?.model}</Descriptions.Item>
+          <Descriptions.Item label="生产厂家">
+            {unit?.manufacturer}
+          </Descriptions.Item>
+          <Descriptions.Item label="软件版本号">
+            {unit?.version}
+          </Descriptions.Item>
+          <Descriptions.Item label="基站版本号">
+            {unit?.unitVersion}
+          </Descriptions.Item>
+        </Descriptions>
+      </Card>
+      <Card>
+        {unit ? (
+          <BetaSchemaForm<Unit>
+            formRef={formRef}
+            columns={proColumns}
+            initialValues={{ ...unit }}
+            onFinish={async (values) => {
+              await upsertUnit({ ...values, id: unit.id });
+              useStore.setState({ timestamp: new Date().getTime() });
+              return true;
+            }}
+            layoutType="Form"
+            submitter={{
+              render: (props, doms) => {
+                return [
+                  ...doms,
+                  <Button
+                    htmlType="button"
+                    danger
+                    onClick={() => {
+                      upsertUnit(unit);
+                    }}
+                    key="restart"
+                  >
+                    重启采集
+                  </Button>,
+                ];
+              },
+            }}
+          ></BetaSchemaForm>
+        ) : null}
+      </Card>
+    </>
   );
 };
 export default Widget;

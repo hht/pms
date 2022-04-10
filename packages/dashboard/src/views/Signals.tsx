@@ -1,5 +1,3 @@
-import "../styles/index.scss";
-
 import {
   Alert,
   Button,
@@ -276,6 +274,21 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       },
     },
     {
+      title: "告警开始延迟(秒)",
+      dataIndex: "startDelay",
+      valueType: "digit",
+      formItemProps: {
+        style: {
+          width: "120px",
+        },
+      },
+    },
+    {
+      title: "告警结束延迟(秒)",
+      dataIndex: "endDelay",
+      valueType: "digit",
+    },
+    {
       title: "操作",
       valueType: "option",
       width: 120,
@@ -350,7 +363,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
           dataSource={store.values}
           actionRef={actionRef}
           search={false}
-          scroll={{ x: 2000 }}
+          scroll={{ x: 2200 }}
           style={{ margin: -24, marginTop: 0 }}
           editable={{
             type: "single",

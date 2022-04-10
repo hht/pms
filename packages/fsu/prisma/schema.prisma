@@ -13,21 +13,23 @@ datasource db {
 }
 
 model Unit {
-  id           Int       @id @default(autoincrement())
-  userName     String?   @unique
-  password     String?
-  unitId       String?
-  resourceId   String?
-  ipAddress    String
-  port         Int
-  model        String?
-  version      String?
-  unitVersion  String?
-  manufacturer String?
-  interval     Int       @default(60)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  reportedAt   DateTime?
+  id            Int       @id @default(autoincrement())
+  userName      String?   @unique @default("")
+  password      String?   @default("")
+  unitId        String?   @default("")
+  resourceId    String?   @default("")
+  localAddress  String    @default("")
+  remoteAddress String    @default("")
+  port          Int
+  model         String?   @default("")
+  version       String?   @default("")
+  unitVersion   String?   @default("")
+  manufacturer  String?   @default("")
+  interval      Int       @default(60)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  reportedAt    DateTime?
+  heartBeat     Int       @default(6000)
 
   devices Device[]
 
@@ -46,11 +48,12 @@ model Alarm {
   occuredAt        DateTime  @default(now())
   clearedAt        DateTime?
   state            String?
+  reported         Boolean   @default(false)
 }
 
 model Device {
-  id Int @id @default(autoincrement())
-
+  id           Int      @id @default(autoincrement())
+  resourceId   String   @default("")
   code         String
   serial       String   @unique
   name         String
@@ -70,7 +73,7 @@ model Device {
   timeout  Int     @default(3000)
 
   Unit      Unit?     @relation(fields: [unitId], references: [id])
-  unitId    Int?
+  unitId    Int?      @default(1)
   updatedAt DateTime?
   signals   Signal[]
 }
@@ -82,7 +85,7 @@ model Signal {
   raw              Float?
   value            String
   normalValue      Int?
-  unit             String?
+  unit             String? @default("")
   enum             String?
   command          String
   offset           Int
@@ -110,15 +113,11 @@ model Signal {
 }
 
 model History {
-  id               Int      @id @default(autoincrement())
-  deviceId         String
-  deviceResourceId String
-  signal           String
-  signalId         String
-  value            String
-  description      String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  payload   String
+  code      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Log {

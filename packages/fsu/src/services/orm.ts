@@ -2,16 +2,15 @@
  * 局站信息设置
  */
 import _ from "lodash";
-import { networkInterfaces } from 'os';
+import { networkInterfaces } from "os";
 import { PrismaClient } from "@prisma/client";
-import { scheduleCron } from ".";
 import { DEVICE_CODE } from "../models/enum";
+import dayjs from "dayjs";
 
-
-const getNetworkAddress = async ()=>{
+const getNetworkAddress = async () => {
   const nets = networkInterfaces();
-  return nets['enp3s0']?.[0]?.address
-}
+  return nets["enp3s0"]?.[0]?.address;
+};
 
 export const prisma = new PrismaClient({
   errorFormat: "minimal",
@@ -27,18 +26,18 @@ export const getUnit = async () => {
       id: 1,
     },
   });
-  if(!unit){
+  if (!unit) {
     return await prisma.unit.create({
-      data:{
-        id:1,
-        ipAddress:await getNetworkAddress()??'',
-        port:8080,
-        manufacturer:'电服中心',
-        unitVersion:'1.01',
-      }
-    })
+      data: {
+        id: 1,
+        localAddress: (await getNetworkAddress()) ?? "",
+        port: 8080,
+        manufacturer: "电服中心",
+        unitVersion: "1.01",
+      },
+    });
   }
-  return unit
+  return unit;
 };
 
 /**
@@ -56,19 +55,6 @@ export const upsertUnit = async (unit: Unit) => {
         data: unit,
       });
   return updated;
-};
-
-/**
- * 获取设备列表
- * @returns
- */
-export const getDevices = async () => {
-  const devices = await prisma.device.findMany({
-    include: {
-      signals: true,
-    },
-  });
-  return devices;
 };
 
 /**
@@ -93,7 +79,6 @@ export const getDevice = async (id: number) => {
  * @returns
  */
 export const upsertDevice = async (device: Device) => {
-  const unit = await getUnit();
   const code = DEVICE_CODE[device.controller];
   if (device.id) {
     return await prisma.device.update({
@@ -104,12 +89,17 @@ export const upsertDevice = async (device: Device) => {
           .omitBy(_.isUndefined)
           .value(),
         code,
+        productionAt: dayjs(device.productionAt).toDate(),
       },
       where: { id: device.id },
     });
   }
   return await prisma.device.create({
-    data: { ..._.omit(device, "id"), code },
+    data: {
+      ..._.omit(device, "id"),
+      productionAt: dayjs(device.productionAt).toDate(),
+      code,
+    },
   });
 };
 /**
@@ -122,7 +112,6 @@ export const deleteDevice = async (id: number) => {
     where: { id },
   });
   // 如果设备删除成功则重置计划任务
-  scheduleCron();
   return deleted;
 };
 

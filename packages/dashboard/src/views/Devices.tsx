@@ -1,5 +1,3 @@
-import "../styles/index.scss";
-
 import { Button, Card, Drawer, message, Modal } from "antd";
 import _ from "lodash";
 import { FC, Fragment, useRef } from "react";
@@ -264,6 +262,22 @@ const Devices: FC = () => {
           },
         ],
       },
+      width: "m",
+    },
+    {
+      title: "生产厂家",
+      dataIndex: "manufacturer",
+      width: "m",
+    },
+    {
+      title: "生产日期",
+      dataIndex: "productionAt",
+      width: "m",
+      valueType: "date",
+    },
+    {
+      title: "软件版本",
+      dataIndex: "version",
       width: "m",
     },
     {
