@@ -6,6 +6,7 @@ import { networkInterfaces } from "os";
 import { PrismaClient } from "@prisma/client";
 import { DEVICE_CODE } from "../models/enum";
 import dayjs from "dayjs";
+import { changeFtpUser } from "./system";
 
 const getNetworkAddress = async () => {
   const nets = networkInterfaces();
@@ -31,9 +32,11 @@ export const getUnit = async () => {
       data: {
         id: 1,
         localAddress: (await getNetworkAddress()) ?? "",
-        port: 8080,
+        port: 21,
         manufacturer: "电服中心",
         unitVersion: "1.01",
+        userName: "admin",
+        password: "CTSC@2020",
       },
     });
   }
@@ -49,11 +52,33 @@ export const upsertUnit = async (unit: Unit) => {
   const updated = unit.id
     ? await prisma.unit.update({
         where: { id: unit.id },
-        data: _.omitBy(unit, _.isUndefined),
+        data: _.omitBy(
+          _.omit(unit, ["userName", "password", "localAddress", "port"]),
+          _.isUndefined
+        ),
       })
     : await prisma.unit.create({
         data: unit,
       });
+  return updated;
+};
+
+/**
+ * 修改FTP信息
+ * @param unit 局站信息
+ * @returns
+ */
+export const upsertFTP = async (
+  unit: Pick<Unit, "userName" | "password" | "id">
+) => {
+  if (!unit.userName || !unit.password) {
+    throw "用户名和密码不能为空";
+  }
+  const updated = await prisma.unit.update({
+    where: { id: unit.id },
+    data: unit,
+  });
+  await changeFtpUser(unit.userName!, unit.password!);
   return updated;
 };
 

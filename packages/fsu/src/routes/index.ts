@@ -8,6 +8,7 @@ import {
   saveSignals,
   upsertDevice,
   upsertUnit,
+  upsertFTP,
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
 import { changeFtpUser, getPorts } from "../services/system";
@@ -150,9 +151,10 @@ export const getDeviceRoutes = (app: Express) => {
     })
   );
   app.post(
-    "/debug",
+    "/ftp",
     ExpressAsyncNext(async (req, res) => {
-      await changeFtpUser("test123", "123456");
+      const { id, userName, password } = req.body;
+      await upsertFTP({ id, userName, password });
       res.json({ message: "FTP用户保存成功" });
     })
   );

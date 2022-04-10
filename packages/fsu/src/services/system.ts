@@ -104,3 +104,23 @@ export const changeFtpUser = async (username: string, password: string) => {
     });
   });
 };
+
+/**
+ * 修改系统时间
+ */
+export const setTime = async (time: string) => {
+  const { exec } = require("child_process");
+  return new Promise((resolve, reject) => {
+    exec(`date -s "${time}"`, (err: Error | null) => {
+      if (err) {
+        Events.emit(
+          EVENT.ERROR_LOG,
+          `修改系统时间失败,错误信息:${err.message}`
+        );
+        reject(err);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+};
