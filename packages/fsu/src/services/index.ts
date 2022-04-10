@@ -34,13 +34,18 @@ export const DEVICES: IDevice[] = [];
    }
  });
 
-export const PORTS: { [key: string]: SerialPort } = {};
 
 /**
  * 重置系统
  */
 const resetDevices = async () => {
   // 清除所有端口信息
+  const ports = _.values(useSerialPortStore.getState().ports);
+  for(const port of ports) {
+    if(port.port.isOpen){
+      await closePort(port.port);
+    }
+  }
   useSerialPortStore.setState({ ports: {} });
 
   // 读取FSU信息

@@ -279,3 +279,10 @@ export async function attempt<T>(
 
   return makeAttempt();
 }
+
+export const wait = (delay: number) =>
+  new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true);
+    }, delay);
+  });

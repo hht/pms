@@ -8,9 +8,10 @@ import {
   saveSignals,
   upsertDevice,
   upsertUnit,
+  upsertFTP,
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
-import { getPorts } from "../services/system";
+import { changeFtpUser, getPorts } from "../services/system";
 import { DEVICES, scheduleCron } from "../services";
 import { transmitLocalRecords } from "../services/soap";
 
@@ -105,8 +106,8 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/boot",
     ExpressAsyncNext(async (req, res) => {
-        await scheduleCron();
-        res.json({ code: true, msg: "系统已重启" });
+      await scheduleCron();
+      res.json({ code: true, msg: "系统已重启" });
     })
   );
 
@@ -150,10 +151,11 @@ export const getDeviceRoutes = (app: Express) => {
     })
   );
   app.post(
-    "/debug",
+    "/ftp",
     ExpressAsyncNext(async (req, res) => {
-      const values = await transmitLocalRecords("SEND_AIDATA", 203);
-      res.json(values);
+      const { id, userName, password } = req.body;
+      await upsertFTP({ id, userName, password });
+      res.json({ message: "FTP用户保存成功" });
     })
   );
 };

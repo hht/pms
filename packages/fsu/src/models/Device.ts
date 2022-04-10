@@ -1,6 +1,6 @@
 import { InterByteTimeoutParser, SerialPort } from "serialport";
 import _, { reject } from "lodash";
-import { attempt } from "../utils";
+import { attempt, wait } from "../utils";
 import fs from "fs";
 import path from "path";
 import { getDevice, prisma } from "../services/orm";
@@ -19,15 +19,6 @@ const SIMULATION_DATA_PATH: { [key: string]: string } = {
   整流模块告警量: "./emulation/电总整流模块告警量/",
   直流屏模拟量: "./emulation/电总直流屏模拟量/",
 };
-
-const wait = (delay: number) =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(true);
-    }, delay);
-  });
-
-
 
 export class IDevice {
   instance: Device;
@@ -48,7 +39,12 @@ export class IDevice {
         },
         (error: Error | null) => {
           if (error) {
-            Events.emit(EVENT.ERROR_LOG, `串口${this.instance.port}初始化失败,错误信息:${error.message||error}`);
+            Events.emit(
+              EVENT.ERROR_LOG,
+              `串口${this.instance.port}初始化失败,错误信息:${
+                error.message || error
+              }`
+            );
             this.status = "串口初始化失败";
           } else {
             port
