@@ -1,1 +1,1 @@
-export const baseURL = "http://192.168.31.250:8080";
+export const baseURL = `${window.location.hostname}:8080`;
