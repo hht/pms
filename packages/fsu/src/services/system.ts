@@ -8,7 +8,7 @@ import { wait } from "../utils";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import compressing from "compressing";
-import { stat, watchFile } from "fs";
+import { stat, watch, unlink } from "fs";
 import dayjs from "dayjs";
 /**
  * 获取CPU使用情况
@@ -132,22 +132,39 @@ export const setTime = async (time: string) => {
  */
 
 export const watchUpdate = async () => {
-  watchFile(
-    "/opt/node/pms/firmware/update.zip",
-    { interval: 5000 },
-    (curr, prev) => {
-      if (dayjs(curr.mtime).diff() > 5 * 1000) {
-        compressing.zip
-          .uncompress(
-            "/opt/node/pms/firmware/update.zip",
-            "/opt/node/pms/packages/"
-          )
-          .catch((e) => {
+  watch(
+    "/opt/node/pms/firmware/",
+    {
+      persistent: true,
+      recursive: false,
+    },
+    async (event, filename) => {
+      console.log(`事件类型是: ${event}`);
+      switch (event) {
+        case "change":
+          try {
+            if (filename && filename.endsWith(".zip")) {
+              await compressing.zip.uncompress(
+                "/opt/node/pms/firmware/" + filename,
+                "/opt/node/pms/packages/"
+              );
+              unlink("/opt/node/pms/firmware/" + filename, (e) => {});
+            }
+          } catch (error: any) {
+            if (
+              error.message.includes(
+                "end of central directory record signature not found"
+              )
+            ) {
+              return;
+            }
             Events.emit(
               EVENT.ERROR_LOG,
-              `解压系统更新包失败,错误信息:${e.message}`
+              `解压系统更新包失败,更新包名称${filename},错误信息:${
+                error.message || error || "未知错误"
+              }`
             );
-          });
+          }
       }
     }
   );
