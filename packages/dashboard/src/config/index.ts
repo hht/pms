@@ -1,1 +1,1 @@
-export const baseURL = `${window.location.hostname}:8080`;
+export const baseURL = `${window.location.origin}:8080`;
