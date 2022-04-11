@@ -11,6 +11,7 @@ import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
 import { SoapClient } from "./soap";
+import { watchUpdate } from "./system";
 
 export const DEVICES: IDevice[] = [];
 
@@ -19,21 +20,20 @@ export const DEVICES: IDevice[] = [];
  * @param port 需要关闭的串口
  * @returns
  */
- const closePort = (port: SerialPort) =>
- new Promise((resolve,reject) => {
-   if (port.isOpen) {
-     port.close((error: Error | null) => {
-       if (error) {
-         reject(error);
-       } else {
-         resolve(true);
-       }
-     });
-   } else {
-     resolve(true);
-   }
- });
-
+const closePort = (port: SerialPort) =>
+  new Promise((resolve, reject) => {
+    if (port.isOpen) {
+      port.close((error: Error | null) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(true);
+        }
+      });
+    } else {
+      resolve(true);
+    }
+  });
 
 /**
  * 重置系统
@@ -41,8 +41,8 @@ export const DEVICES: IDevice[] = [];
 const resetDevices = async () => {
   // 清除所有端口信息
   const ports = _.values(useSerialPortStore.getState().ports);
-  for(const port of ports) {
-    if(port.port.isOpen){
+  for (const port of ports) {
+    if (port.port.isOpen) {
       await closePort(port.port);
     }
   }
@@ -98,7 +98,7 @@ export const scheduleCron = async () => {
             Events.emit(
               EVENT.ERROR_LOG,
               `读取${device.instance.name}信息发生内部错误,错误信息:${
-                e.message || e || "无详细信息"
+                e.message || e || "未知错误"
               }`
             );
           }
@@ -106,5 +106,6 @@ export const scheduleCron = async () => {
       }
     }
   );
+  watchUpdate();
   await SoapClient.bootstrap();
 };

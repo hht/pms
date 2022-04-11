@@ -261,11 +261,11 @@ export class IDevice {
         });
         Events.emit(
           EVENT.ERROR_LOG,
-          `设备命令[${command}]读取失败,错误信息:${error.message}`
+          `设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`
         );
-        errors.push(`设备命令[${command}]读取失败,错误信息:${error.message}`);
+        errors.push(`设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`);
         this.setStatus(
-          `设备命令[${command}]读取失败,错误信息:${error.message}`
+          `设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`
         );
       }
     }
