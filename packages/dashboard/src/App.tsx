@@ -16,12 +16,12 @@ import Alarms from "./views/Alarms";
 const { Header, Content } = Layout;
 
 const App: FC = () => {
-  const [current, setCurrent] = useState("1");
+  const [current, setCurrent] = useState("0");
   useSystem();
   const { message, socket, readyState } = useWebsocket(baseURL);
   return (
     <Layout>
-      <Header>
+      <Header style={{ position: "fixed", zIndex: 1, width: "100%" }}>
         <div className="logo">动环采集器 PMS-X</div>
         <Menu
           theme="dark"
@@ -37,7 +37,7 @@ const App: FC = () => {
           <Menu.Item key="5">串口调试</Menu.Item>
         </Menu>
       </Header>
-      <Content style={{ padding: 48 }}>
+      <Content style={{ padding: 48, paddingTop: 112 }}>
         {current === "0" ? <Dashboard /> : null}
         {current === "1" ? <Unit /> : null}
         {current === "2" ? <Devices /> : null}

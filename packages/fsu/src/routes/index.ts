@@ -11,9 +11,8 @@ import {
   upsertFTP,
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
-import { changeFtpUser, getPorts } from "../services/system";
+import { getPorts } from "../services/system";
 import { DEVICES, scheduleCron } from "../services";
-import { transmitLocalRecords } from "../services/soap";
 
 /**
  * 局站相关信息接口

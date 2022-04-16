@@ -1,4 +1,4 @@
-import _ from "lodash";
+import _, { String } from "lodash";
 import * as soap from "soap";
 import { Express } from "express";
 import { useUnitStore } from "../store";
@@ -6,32 +6,145 @@ import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import { prisma } from "./orm";
 import dayjs from "dayjs";
-const wsdl = require("fs").readFileSync("./soap/LSCService.wsdl", "utf8");
+import { getSystemInfo } from "./system";
+const cliendSWDL = require("fs").readFileSync("./soap/SUService.wsdl", "utf8");
+const serverWSDL = require("fs").readFileSync("./soap/SCService.wsdl", "utf8");
+
+const getRequest = async (command: string, code: number, data: object) => {
+  const unit = useUnitStore.getState();
+  return {
+    parameters: {
+      xmlData: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
+        {
+          Request: {
+            PK_Type: {
+              Name: command,
+              Code: `${code}`,
+            },
+            Info: {
+              SUId: unit.unitId,
+              SURid: unit.resourceId || "",
+              ...data,
+            },
+          },
+        },
+        "invoke",
+        "",
+        "http://SUService.chinaunicom.com"
+      )}
+  `,
+    },
+  };
+};
+
+const getResponse = async (command: string, code: number, data: object) => {
+  const unit = useUnitStore.getState();
+  return {
+    invokeReturn: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
+      {
+        Response: {
+          PK_Type: {
+            Name: command,
+            Code: `${code}`,
+          },
+          Info: {
+            SUId: unit.unitId,
+            SURid: unit.resourceId || "",
+            ...data,
+          },
+        },
+      },
+      "invokeResponse",
+      "",
+      "http://SUService.chinaunicom.com"
+    )}
+  `,
+  };
+  return {
+    invokeResult: {
+      Response: {
+        PK_Type: {
+          Name: command,
+          Code: `${code}`,
+        },
+        Info: {
+          SUId: unit.unitId,
+          SURid: unit.resourceId || "",
+          ...data,
+        },
+      },
+    },
+  };
+};
+
+const getUnitInfo = async () => {
+  const { cpu, mem } = await getSystemInfo();
+
+  return getResponse("GET_SUINFO_ACK", 902, {
+    TSUStatus: {
+      CPUUsage: `${cpu}`,
+      MEMUsage: `${mem}`,
+    },
+  });
+};
+
+const getFTP = async () => {
+  return getResponse("GET_FTP_ACK", 702, {
+    Result: 1,
+    UserName: "ftp",
+    Password: "ftp",
+  });
+};
+
+const setFTP = async () => {
+  return getResponse("GET_FTP", 702, {
+    Result: 1,
+    UserName: "ftp",
+    Password: "ftp",
+  });
+};
+
+const parser = new soap.WSDL(
+  cliendSWDL,
+  "http://127.0.0.1:8080/services/SUService?wsdl",
+  {}
+);
 
 // 本地SOAP服务器
 const SoapService = {
   SCServiceServiceImp: {
     BasicHttpBinding_ISCServiceSoapBinding: {
-      invoke: function ({
+      invoke: async function ({
         xmlData,
       }: {
         xmlData: {
-          Request: {
-            PK_Type: {
-              Name: string;
-              Code: string;
-            };
-            Info: any;
-          };
+          $value: String;
         };
       }) {
-        switch (xmlData.Request.PK_Type.Code) {
-          case "203":
-            console.log("发送历史信息");
-            break;
-          default:
-            console.log("未实现消息", xmlData.Request.PK_Type.Code);
+        if (_.isString(xmlData?.$value)) {
+          const command = parser.xmlToObject(xmlData?.$value) as {
+            Request: {
+              PK_Type: { Name: string; Code: string };
+              Info: { SUId: string; SURId: string };
+            };
+          };
+          console.log(command);
+          switch (command.Request.PK_Type.Code) {
+            case "901":
+              return await getUnitInfo();
+            case "801":
+              return getResponse("SET_TIME_ACK", 802, { Result: 1 });
+            case "701":
+              return await getFTP();
+          }
         }
+        // switch (xmlData.Request.PK_Type.Code) {
+        //   case "203":
+        //     console.log("发送历史信息");
+        //     break;
+        //   default:
+        //     console.log("未实现消息", xmlData.Request.PK_Type.Code);
+        // }
         return xmlData;
       },
     },
@@ -41,9 +154,9 @@ const SoapService = {
 export const createSoapServer = (app: Express) => {
   const server = soap.listen(
     app,
-    "/services/SCService",
+    "/services/SUService",
     SoapService,
-    wsdl,
+    cliendSWDL,
     function () {
       console.log("SOAP服务器已启动...");
     }
@@ -89,6 +202,10 @@ const getEndpoint = async () => {
 
 const wsdlOptions = {
   valueKey: "value",
+  transformRequest: (data: any) => {
+    console.log(data);
+    return data;
+  },
 };
 
 // const wsdlInstance = new soap.WSDL(wsdl, endpoint, {});
@@ -196,6 +313,7 @@ export class SoapClient {
   static bootstrap = bootstrap;
   static dispose = dispose;
   static async invoke(command: string, code: number, data: object) {
+    return;
     if (!SoapClient.client) {
       try {
         SoapClient.client = await getEndpoint();

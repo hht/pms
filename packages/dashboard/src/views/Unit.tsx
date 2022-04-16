@@ -1,4 +1,4 @@
-import { Button, Card, Descriptions, message } from "antd";
+import { Alert, Button, Card, Descriptions, message } from "antd";
 import { FC, useRef } from "react";
 
 import {
@@ -7,28 +7,18 @@ import {
   ProFormInstance,
 } from "@ant-design/pro-form";
 import { useStore } from "../store";
-import { useRequest, request } from "../hooks/useRequest";
+import { request } from "../hooks/useRequest";
+import dayjs from "dayjs";
+
+const upsertUnit = async (values: Partial<Unit> | null) =>
+  request("/unit", values).then(() => {
+    useStore.setState({ timestamp: new Date().getTime() });
+    message.success("局站信息修改成功");
+  });
 
 const Widget: FC = () => {
   const { unit } = useStore((state) => state);
-  const { run: upsertUnit } = useRequest((values) => request("/unit", values), {
-    manual: true,
-    onSuccess: () => {
-      message.success("局站信息更新成功");
-    },
-  });
-  const { run: upsertFTP, loading } = useRequest(
-    (values) => request("/ftp", values),
-    {
-      manual: true,
-      onSuccess: () => {
-        message.success("FTP信息更新成功");
-      },
-    }
-  );
-  const { run } = useRequest(() => request("/debug"), {
-    manual: true,
-  });
+
   const formRef = useRef<ProFormInstance>();
 
   const proColumns: ProFormColumnsType<Unit>[] = [
@@ -50,21 +40,37 @@ const Widget: FC = () => {
           },
         },
         {
+          title: "局站IP",
+          dataIndex: "localAddress",
+          width: "s",
+          formItemProps: {
+            rules: [
+              {
+                required: true,
+                message: "此项为必填项",
+              },
+            ],
+          },
+        },
+        {
+          title: "局站端口",
+          dataIndex: "port",
+          width: "s",
+          formItemProps: {
+            rules: [
+              {
+                required: true,
+                message: "此项为必填项",
+              },
+            ],
+          },
+        },
+        {
           title: "采样间隔(秒)",
           width: "s",
           tooltip:
             "采样间隔取决于设备数量，最低60秒，如设备比较多，可以适当增加此数值",
           dataIndex: "interval",
-          valueType: "digit",
-          fieldProps: {
-            min: 10,
-            precision: 0,
-          },
-        },
-        {
-          title: "心跳间隔(秒)",
-          width: "s",
-          dataIndex: "heartBeat",
           valueType: "digit",
           fieldProps: {
             min: 10,
@@ -125,20 +131,39 @@ const Widget: FC = () => {
   return (
     <>
       <Card
-        extra={
+        extra={[
+          <Button
+            htmlType="button"
+            type="primary"
+            ghost
+            key="update"
+            style={{ marginRight: 20 }}
+            onClick={() => {
+              upsertUnit({ ...unit, reportedAt: dayjs().toDate() });
+            }}
+          >
+            更新配置
+          </Button>,
           <Button
             htmlType="button"
             danger
+            key="reset"
             onClick={() => {
               upsertUnit(unit);
             }}
           >
             重启采集
-          </Button>
-        }
+          </Button>,
+        ]}
         title="设备信息"
         style={{ marginBottom: 20 }}
       >
+        <Alert
+          type="warning"
+          description="如果您更新了系统配置，如增减设备，配置采样点等，请点击更新配置按钮设置系统更新时间"
+          style={{ marginBottom: 20 }}
+          showIcon
+        ></Alert>
         <Descriptions column={2} bordered>
           <Descriptions.Item label="产品型号">{unit?.model}</Descriptions.Item>
           <Descriptions.Item label="生产厂家">
@@ -160,7 +185,6 @@ const Widget: FC = () => {
             initialValues={{ ...unit }}
             onFinish={async (values) => {
               await upsertUnit({ ...values, id: unit.id });
-              useStore.setState({ timestamp: new Date().getTime() });
               return true;
             }}
             layoutType="Form"
@@ -174,8 +198,9 @@ const Widget: FC = () => {
             columns={columns}
             initialValues={{ ...unit }}
             onFinish={async (values) => {
-              await upsertFTP({ ...values, id: unit.id });
+              await request("/ftp", { ...values, id: unit.id });
               useStore.setState({ timestamp: new Date().getTime() });
+              message.success("FTP信息更新成功");
               return true;
             }}
             layoutType="Form"

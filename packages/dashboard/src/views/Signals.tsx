@@ -72,7 +72,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     }
   );
 
-  const { run: saveConfig } = useRequest(
+  const { run: saveConfig, loading: saving } = useRequest(
     () =>
       request("/config", {
         values: store.values,
@@ -382,6 +382,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
               key="fetch"
               icon={<SaveOutlined />}
               type="primary"
+              loading={saving}
               onClick={() => {
                 saveConfig();
               }}

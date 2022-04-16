@@ -78,7 +78,7 @@ export const upsertFTP = async (
     where: { id: unit.id },
     data: unit,
   });
-  await changeFtpUser(unit.userName!, unit.password!);
+  // await changeFtpUser(unit.userName!, unit.password!);
   return updated;
 };
 

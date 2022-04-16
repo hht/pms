@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "tsc": "tsc --watch",
+    "bi": "nodemon --ignore ./database/ dist/BInterface.js",
     "start": "nodemon --ignore ./database/ dist/index.js",
     "dev": "nodemon --ignore ./database/ dist/test.js"
   },

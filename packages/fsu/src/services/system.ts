@@ -69,7 +69,6 @@ export const changeFtpUser = async (username: string, password: string) => {
       }
     });
     stdout.on("end", async () => {
-      console.log("删除成功，开始添加用户");
       const { stdout, stdin } = await exec(
         `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d /opt/node/pms/firmware/`,
         (err: Error | null) => {

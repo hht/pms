@@ -21,22 +21,17 @@ const getModelList = () => {
   return ["PSM-A", "TH-01"];
 };
 
+const upsertDevice = (values: Device) =>
+  request("/device", values).then(() => {
+    message.success("设备信息修改成功");
+  });
+
 const Devices: FC = () => {
   const { ports, protocols } = useStore((state) => state);
   const actionRef = useRef<ActionType>();
   const values = useReactive<{ current?: Partial<Device> }>({
     current: undefined,
   });
-  const { run: upsertDevice } = useRequest(
-    (values) => request("/device", values),
-    {
-      manual: true,
-      onSuccess: () => {
-        message.success("设备更新成功");
-        actionRef.current?.reload();
-      },
-    }
-  );
 
   const formRef = useRef<ProFormInstance>();
 

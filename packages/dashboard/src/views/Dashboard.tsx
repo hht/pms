@@ -1,4 +1,4 @@
-import { Alert, Card, Statistic, Tag } from "antd";
+import { Alert, Card, Result, Skeleton, Statistic, Tag } from "antd";
 import _ from "lodash";
 import { FC } from "react";
 import { useDashboardStore } from "../store";
@@ -30,6 +30,17 @@ const getColor = (data: Signal) => {
 
 const Dashboard: FC = () => {
   const devices = useDashboardStore((state) => state.devices, shallow);
+  if (_.keys(devices).length === 0) {
+    return (
+      <Card>
+        <Result
+          icon={<Skeleton active />}
+          title="实时数据"
+          subTitle="实时数据将于下一采样周期更新，请稍后..."
+        />
+      </Card>
+    );
+  }
   return (
     <>
       {_.values(devices).map((device) => (

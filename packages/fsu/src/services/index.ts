@@ -106,6 +106,6 @@ export const scheduleCron = async () => {
       }
     }
   );
-  watchUpdate();
+  // watchUpdate();
   await SoapClient.bootstrap();
 };
