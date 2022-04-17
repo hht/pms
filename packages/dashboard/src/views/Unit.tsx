@@ -77,6 +77,16 @@ const Widget: FC = () => {
             precision: 0,
           },
         },
+        {
+          title: "经度",
+          width: "s",
+          dataIndex: "longitude",
+        },
+        {
+          title: "纬度",
+          width: "s",
+          dataIndex: "latitude",
+        },
       ],
     },
     {

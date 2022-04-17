@@ -12,6 +12,7 @@ import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
 import { SoapClient } from "./soap";
 import { watchUpdate } from "./system";
+import { bootstrap } from "./opetration";
 
 export const DEVICES: IDevice[] = [];
 
@@ -107,5 +108,5 @@ export const scheduleCron = async () => {
     }
   );
   // watchUpdate();
-  await SoapClient.bootstrap();
+  await SoapClient.invoke(await bootstrap());
 };

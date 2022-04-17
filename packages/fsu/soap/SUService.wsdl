@@ -53,7 +53,7 @@
 
       <wsdl:port binding="impl:SUServiceSoapBinding" name="SUService">
 
-         <wsdlsoap:address location="http://47.104.107.204:8080/services/SUService"/>
+         <wsdlsoap:address location="http://127.0.0.1:8080/services/SUService"/>
 
       </wsdl:port>
 

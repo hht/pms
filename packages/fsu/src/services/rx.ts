@@ -253,11 +253,15 @@ const analogValueChanged$ = fromEvent(Events.events, EVENT.ANALOG_VALUE_CHANGED)
     const values = getValues(data as Value[]);
     // 上报采样点信息
     if (values.length) {
-      SoapClient.invoke("SEND_AIDATA", 203, {
-        DeviceList: {
-          Device: values,
+      SoapClient.invoke([
+        "SEND_AIDATA",
+        203,
+        {
+          DeviceList: {
+            Device: values,
+          },
         },
-      }).catch(async () => {
+      ]).catch(async () => {
         // await prisma.history.create({
         //   data: {
         //     code: 203,
@@ -278,11 +282,15 @@ const digitalValueChanged$ = fromEvent(
     const values = getValues(data as Value[]);
     // 上报采样点信息
     if (values.length) {
-      SoapClient.invoke("SEND_DI", 303, {
-        DeviceList: {
-          Device: values,
+      SoapClient.invoke([
+        "SEND_DI",
+        303,
+        {
+          DeviceList: {
+            Device: values,
+          },
         },
-      }).catch(async () => {
+      ]).catch(async () => {
         // await prisma.history.create({
         //   data: {
         //     code: 303,
@@ -345,9 +353,13 @@ const alarmChanged$ = fromEvent(Events.events, EVENT.ALARM_SETTLE)
         TAlarm: { ...it, SerialNo: _.padStart(it.SerialNo, 10, "0") },
       }));
       // 上报采样点信息
-      SoapClient.invoke("SEND_ALARM", 603, {
-        TAlarmList: values,
-      }).catch(async () => {
+      SoapClient.invoke([
+        "SEND_ALARM",
+        603,
+        {
+          TAlarmList: values,
+        },
+      ]).catch(async () => {
         await prisma.history.create({
           data: {
             code: 603,

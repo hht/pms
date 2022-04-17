@@ -16,6 +16,8 @@ interface Unit {
   updatedAt: Date;
   reportedAt?: Date;
   heartBeat: number;
+  longitude: number;
+  latitude: number;
 }
 
 interface Device {

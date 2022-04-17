@@ -10,6 +10,9 @@ import { EVENT } from "../models/enum";
 import compressing from "compressing";
 import { stat, watch, unlink } from "fs";
 import dayjs from "dayjs";
+
+const BASE_DIR = "/opt/node/pms";
+
 /**
  * 获取CPU使用情况
  * @returns
@@ -33,10 +36,6 @@ export const getSystemInfo = async () => {
  */
 export const getPorts = async () => {
   return await SerialPort.list();
-};
-
-const deleteUser = async () => {
-  console.log("修改FTP用户");
 };
 
 /**
@@ -70,7 +69,7 @@ export const changeFtpUser = async (username: string, password: string) => {
     });
     stdout.on("end", async () => {
       const { stdout, stdin } = await exec(
-        `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d /opt/node/pms/firmware/`,
+        `/www/server/pure-ftpd/bin/pure-pw useradd ${username} -u www -d ${BASE_DIR}/firmware/`,
         (err: Error | null) => {
           if (err) {
             Events.emit(
@@ -132,22 +131,21 @@ export const setTime = async (time: string) => {
 
 export const watchUpdate = async () => {
   watch(
-    "/opt/node/pms/firmware/",
+    `${BASE_DIR}/firmware/`,
     {
       persistent: true,
       recursive: false,
     },
     async (event, filename) => {
-      console.log(`事件类型是: ${event}`);
       switch (event) {
         case "change":
           try {
             if (filename && filename.endsWith(".zip")) {
               await compressing.zip.uncompress(
-                "/opt/node/pms/firmware/" + filename,
-                "/opt/node/pms/packages/"
+                `${BASE_DIR}/firmware/` + filename,
+                `${BASE_DIR}/packages/`
               );
-              unlink("/opt/node/pms/firmware/" + filename, (e) => {});
+              unlink(`${BASE_DIR}/firmware/` + filename, (e) => {});
             }
           } catch (error: any) {
             if (

@@ -30,6 +30,8 @@ model Unit {
   updatedAt     DateTime  @updatedAt
   reportedAt    DateTime?
   heartBeat     Int       @default(6000)
+  longitude     Float     @default(126.642)
+  latitude      Float     @default(45.757)
 }
 
 model Alarm {
