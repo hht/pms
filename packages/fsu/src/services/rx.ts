@@ -1,10 +1,12 @@
 import { EventEmitter } from "events";
 import _ from "lodash";
-import { fromEvent, interval, map, mergeAll, toArray, windowTime } from "rxjs";
+import { fromEvent, map, mergeAll, toArray, windowTime } from "rxjs";
 import { prisma } from "./orm";
 import { EVENT } from "../models/enum";
 import dayjs from "dayjs";
-import { SoapClient } from "./soap";
+import { getEndpoint, SoapClient } from "./soap";
+import { bootstrap } from "./opetration";
+import { getSignalState } from "../utils";
 export class Events {
   static events: EventEmitter = new EventEmitter();
   static emit(event: string, data: any) {
@@ -12,29 +14,7 @@ export class Events {
   }
 }
 
-type SIGNAL_STATE = "00" | "01" | "02" | "03" | "04";
-
 type ALARM_STATE = "待上传" | "已上传" | "已清除" | "已取消";
-
-const getSignalStates = (data: Signal, value: number): SIGNAL_STATE => {
-  // 信号量并且有正常值
-  if (data.length === 1) {
-    return value === data.normalValue ? "00" : "01";
-  }
-  if (data.upperMajorLimit && value > data.upperMajorLimit) {
-    return "04";
-  }
-  if (data.upperMinorLimit && value > data.upperMinorLimit) {
-    return "03";
-  }
-  if (data.lowerMajorLimit && value < data.lowerMajorLimit) {
-    return "02";
-  }
-  if (data.lowerMinorLimit && value < data.lowerMinorLimit) {
-    return "01";
-  }
-  return "00";
-};
 
 const valueChanged = (data: Value) => {
   // 如果已到采样间隔时间，则发送采样消息,默认10分钟
@@ -66,7 +46,7 @@ const getIdentity = (data: Signal) => {
   return {
     deviceId: `${deviceCode}${deviceSerial}`,
     deviceResourceId: "",
-    signalId: `${deviceCode}${signalType}${signalCode}${getSignalStates(
+    signalId: `${deviceCode}${signalType}${signalCode}${getSignalState(
       data,
       data.raw!
     )}${signalSerial}`,
@@ -129,8 +109,8 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
     });
 
     // 采样点告警处理
-    const prevState = getSignalStates(recieved, recieved.prev);
-    const currentState = getSignalStates(recieved, recieved.raw!);
+    const prevState = getSignalState(recieved, recieved.prev);
+    const currentState = getSignalState(recieved, recieved.raw!);
     // 如果是模拟量且状态发生变化
     if (
       recieved.length !== 1 &&
@@ -381,3 +361,17 @@ const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
     });
   }
 );
+
+// 中断后重新连接,间隔60秒
+const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
+  .pipe(windowTime(60 * 1000), map(toArray()), mergeAll())
+  .subscribe(async (data) => {
+    if (data.length) {
+      try {
+        SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
+        await SoapClient.invoke(await bootstrap());
+      } catch (e) {
+        Events.emit(EVENT.ERROR_LOG, "重新连接服务器失败");
+      }
+    }
+  });

@@ -3,6 +3,8 @@
  */
 import { NextFunction, Request, Response } from "express";
 import _ from "lodash";
+import { EVENT } from "../models/enum";
+import { SocketServer } from "../services/socket";
 
 /**
  * 异步请求处理
@@ -286,3 +288,53 @@ export const wait = (delay: number) =>
       resolve(true);
     }, delay);
   });
+
+const inspect = (type: string, data: any) => {
+  console.log("\x1b[35m%s\x1b[0m", `${type}:`);
+
+  console.log(
+    "\x1b[34m%s\x1b[0m",
+    JSON.stringify(data)
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+  );
+};
+
+export const soapLogger = (type: string, data: any) => {
+  if (type === "received") {
+    inspect("发送消息", data);
+  }
+  if (type === "replied") {
+    inspect("接收消息", data);
+  }
+  if (["received", "replied"].includes(type)) {
+    SocketServer.instance?.emit(EVENT.SOAP_EVENT, {
+      direction: type === "received" ? "发送消息" : "接收消息",
+      data: JSON.stringify(data)
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"'),
+    });
+  }
+};
+
+export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
+  // 信号量并且有正常值
+  if (data.length === 1) {
+    return value === data.normalValue ? "00" : "01";
+  }
+  if (data.upperMajorLimit && value > data.upperMajorLimit) {
+    return "04";
+  }
+  if (data.upperMinorLimit && value > data.upperMinorLimit) {
+    return "03";
+  }
+  if (data.lowerMajorLimit && value < data.lowerMajorLimit) {
+    return "02";
+  }
+  if (data.lowerMinorLimit && value < data.lowerMinorLimit) {
+    return "01";
+  }
+  return "00";
+};

@@ -11,7 +11,6 @@ import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
 import { SoapClient } from "./soap";
-import { watchUpdate } from "./system";
 import { bootstrap } from "./opetration";
 
 export const DEVICES: IDevice[] = [];
@@ -23,7 +22,7 @@ export const DEVICES: IDevice[] = [];
  */
 const closePort = (port: SerialPort) =>
   new Promise((resolve, reject) => {
-    if (port.isOpen) {
+    if (port?.isOpen) {
       port.close((error: Error | null) => {
         if (error) {
           reject(error);
@@ -43,7 +42,7 @@ const resetDevices = async () => {
   // 清除所有端口信息
   const ports = _.values(useSerialPortStore.getState().ports);
   for (const port of ports) {
-    if (port.port.isOpen) {
+    if (port.port?.isOpen) {
       await closePort(port.port);
     }
   }

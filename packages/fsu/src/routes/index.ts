@@ -13,6 +13,7 @@ import {
 import { ExpressAsyncNext } from "../utils";
 import { getPorts } from "../services/system";
 import { DEVICES, scheduleCron } from "../services";
+import { handleInvoke } from "../services/soap";
 
 /**
  * 局站相关信息接口
@@ -155,6 +156,13 @@ export const getDeviceRoutes = (app: Express) => {
       const { id, userName, password } = req.body;
       await upsertFTP({ id, userName, password });
       res.json({ message: "FTP用户保存成功" });
+    })
+  );
+  app.post(
+    "/interface",
+    ExpressAsyncNext(async (req, res) => {
+      const { method, direction } = req.body;
+      res.json(await handleInvoke(method, direction));
     })
   );
 };

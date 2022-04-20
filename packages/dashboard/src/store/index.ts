@@ -30,6 +30,11 @@ interface DashboardStore {
   }) => void;
 }
 
+interface EventStore {
+  events: { direction: string; data: any }[];
+  append: (event: { direction: string; data: any }) => void;
+}
+
 export const useStore = create<PmsStore>((set) => ({
   unit: null,
   protocols: [],
@@ -43,6 +48,16 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     set(
       produce((state: DashboardStore) => {
         state.devices = { ...state.devices, [device.deviceId]: device };
+      })
+    ),
+}));
+
+export const useEventStore = create<EventStore>((set) => ({
+  events: [],
+  append: (evnet: { direction: string; data: any }) =>
+    set(
+      produce((state: EventStore) => {
+        state.events = [evnet, ...state.events];
       })
     ),
 }));

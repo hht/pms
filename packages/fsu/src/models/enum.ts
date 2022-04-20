@@ -18,6 +18,8 @@ export const EVENT = {
   ALARM_DISMISSED: "END",
   ALARM_SETTLE: "alarmSettle",
   ERROR_LOG: "errorLog",
+  SOAP_EVENT: "soapEvent",
+  DISCONNECTED: "disconnected",
 };
 
 export const ALTERNATING_VOLTAGE: T = {

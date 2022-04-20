@@ -18,6 +18,7 @@ interface Unit {
   heartBeat: number;
   longitude: number;
   latitude: number;
+  activeIp?: string;
 }
 
 interface Device {
@@ -37,18 +38,18 @@ interface Device {
   activite: boolean;
   signals: Signal[];
   address?: number | null;
+  createdAt?: Date;
 }
 
 interface Alarm {
-  id: string;
+  id: number;
   deviceId: string;
   deviceResourceId: string;
   signal: string;
   value: string;
   description: string;
-  createdAt: string;
-  updatedAt: string;
-  active: boolean;
+  occuredAt: Date;
+  updatedAt: Date;
   signalId: string;
   reported: boolean;
 }
@@ -135,3 +136,60 @@ type Value = Signal & {
   deviceId: string;
   prev: number;
 };
+
+interface InvokeInput {
+  /** soapenc:string(undefined) */
+  xmlData: string;
+}
+
+interface InvokeOutput {
+  /** soapenc:string(undefined) */
+  invokeReturn: string;
+}
+
+interface IServiceSoap {
+  invoke: (
+    input: InvokeInput,
+    cb: (
+      err: any | null,
+      result: InvokeOutput,
+      raw: string,
+      soapHeader: { [k: string]: any }
+    ) => any,
+    options?: any,
+    extraHeaders?: any
+  ) => void;
+}
+
+interface SoapRequest {
+  Request: {
+    PK_Type: { Name: string; Code: string };
+    Info: { SUId: string; SURId: string } & { [key: string]: any };
+  };
+}
+
+type SoapParameter = [command: string, code: number | string, data: any];
+
+type SoapDevice = {
+  attributes: {
+    Id: string;
+  };
+  Signal?: {
+    attributes: {
+      Id: string;
+      Value?: string;
+      SetValue?: string;
+      SHLimit?: string;
+      HLimit?: string;
+      LLimit?: string;
+      SLLimit?: string;
+      Threshold?: string;
+      RelativeVal?: string;
+      IntervalTime?: string;
+      BDelay?: string;
+      EDelay?: string;
+    };
+  }[];
+};
+
+type SIGNAL_STATE = "00" | "01" | "02" | "03" | "04";

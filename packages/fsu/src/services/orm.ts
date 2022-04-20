@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import { DEVICE_CODE } from "../models/enum";
 import dayjs from "dayjs";
 import { changeFtpUser } from "./system";
+import { getSignalState } from "../utils";
 
 const getNetworkAddress = async () => {
   const nets = networkInterfaces();
@@ -37,6 +38,7 @@ export const getUnit = async () => {
         unitVersion: "1.01",
         userName: "admin",
         password: "CTSC@2020",
+        updatedAt: dayjs().toDate(),
       },
     });
   }
@@ -201,3 +203,150 @@ export const updateSignal = async (value: Signal) => {
     where: { id: value.id },
   });
 };
+
+/**
+ * 转换设备信息到B接口格式
+ */
+
+export const encodeDevice = async ({
+  d,
+  filter = (signal: Signal) => true,
+  command,
+}: {
+  d: SoapDevice;
+  filter: (signal: Signal) => boolean;
+  command: string;
+}) => {
+  const code = _.take(d.attributes.Id, 3).join("");
+  const serial = _.takeRight(d.attributes.Id, 2).join("");
+  const device = await prisma.device.findFirst({
+    where: {
+      code,
+      serial,
+    },
+    include: {
+      signals: true,
+    },
+  });
+  if (device) {
+    return {
+      attributes: {
+        ...d.attributes,
+        ...(["GET_DO_ACK", "GET_AlarmProperty_ACK"].includes(command)
+          ? {
+              Rid: device.resourceId,
+              DeviceVender: device.manufacturer,
+              DeviceType: device.model,
+              MFD: dayjs(device.productionAt).format("YYYY-MM-DD"),
+              ControllerType: device.controller,
+              SoftwareVersion: device.version,
+              BatchNo: device.batch,
+            }
+          : {}),
+      },
+      Signal: device.signals.filter((it) =>
+        d.Signal
+          ? d.Signal.map((s) => s.attributes.Id).includes(
+              encodeSignalId(it as Signal)
+            )
+          : filter(it as Signal)
+      ),
+    };
+  }
+  return {
+    attributes: d.attributes,
+  };
+};
+
+export const encodeDevices: (
+  command: string,
+  code: string,
+  devices: SoapDevice[],
+  filter: (signal: Signal) => boolean,
+  mapper: (signal: Signal) => { [key: string]: string | number | null }
+) => Promise<[string, string, any]> = async (
+  command,
+  code,
+  devices,
+  filter,
+  mapper
+) => {
+  const response = await Promise.all(
+    devices.map(async (it) => await encodeDevice({ d: it, filter, command }))
+  );
+  return [
+    command,
+    code,
+    {
+      DeviceList: {
+        Device: response.map((it) => ({
+          attributes: { ...it?.attributes },
+          Signal: it?.Signal?.map((it) => {
+            return {
+              attributes: {
+                Id: encodeSignalId(it as Signal),
+                ...mapper(it as Signal),
+              },
+            };
+          }),
+        })),
+      },
+    },
+  ];
+};
+
+export const encodeSignalId = (signal: Signal, withState = false) => {
+  const [deviceCode, deviceSN, signalType, signalCode, signalSN] =
+    signal.id.split("-");
+  return `${deviceCode}${signalType}${signalCode}${
+    withState ? getSignalState(signal, signal.raw!) : "00"
+  }${signalSN}`;
+};
+
+export const decodeDevices: (devices: SoapDevice[]) => Partial<Signal>[] = (
+  devices
+) => {
+  return _.chain(devices)
+    .map((it) => {
+      const deviceSN = _.takeRight(it.attributes.Id, 2).join("");
+      return (
+        it.Signal?.map((signal) => {
+          const [a, b, c, d, e, f, g, h, i, j] = signal.attributes.Id.split("");
+          return _.omitBy(
+            {
+              id: `${a}${b}${c}-${deviceSN}-${d}-${e}${f}${g}-${h}${i}${j}`,
+              ..._.mapValues(
+                {
+                  raw: signal.attributes.SetValue,
+                  upperMajorLimit: signal.attributes.SHLimit,
+                  upperMinorLimit: signal.attributes.HLimit,
+                  lowerMinorLimit: signal.attributes.LLimit,
+                  lowerMajorLimit: signal.attributes.SLLimit,
+                  threshold: signal.attributes.Threshold,
+                  thresholdPercent: signal.attributes.RelativeVal,
+                  interval: signal.attributes.IntervalTime,
+                  startDelay: signal.attributes.BDelay,
+                  endDelay: signal.attributes.EDelay,
+                },
+                (v) => _.parseInt(v ?? "NaN", 10)
+              ),
+            },
+            (it) => _.isNaN(it) || _.isNull(it) || _.isUndefined(it)
+          );
+        }) ?? ([] as Partial<Signal>)
+      );
+    })
+    .flatten()
+    .value();
+};
+
+export const encodeAlarm = (alarm: Alarm) => ({
+  SerialNo: _.padStart(`${alarm.id}`, 10, "0"),
+  DeviceId: alarm.deviceId,
+  DeviceRId: alarm.deviceResourceId,
+  AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
+  TriggerVal: alarm.value,
+  AlarmFlag: "BEGIN",
+  SignalId: alarm.signalId,
+  AlarmDesc: alarm.description,
+});

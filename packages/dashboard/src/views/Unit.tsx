@@ -149,7 +149,7 @@ const Widget: FC = () => {
             key="update"
             style={{ marginRight: 20 }}
             onClick={() => {
-              upsertUnit({ ...unit, reportedAt: dayjs().toDate() });
+              upsertUnit({ ...unit, updatedAt: dayjs().toDate() });
             }}
           >
             更新配置

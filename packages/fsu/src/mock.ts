@@ -2,9 +2,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Express } from "express";
 import _ from "lodash";
-import { getSocketInstance } from "./services/socket";
-import { ExpressErrorHandler } from "./utils";
-import { getDeviceRoutes } from "./routes";
+import { ExpressErrorHandler, soapLogger } from "./utils";
 import { createServer } from "http";
 import * as soap from "soap";
 import util from "util";
@@ -13,29 +11,6 @@ import { useUnitStore } from "./store";
 util.inspect.defaultOptions.depth = null;
 
 /* tslint:disable:max-line-length no-empty-interface */
-export interface InvokeInput {
-  /** soapenc:string(undefined) */
-  xmlData: any;
-}
-
-export interface InvokeOutput {
-  /** soapenc:string(undefined) */
-  invokeReturn: string;
-}
-
-export interface IServiceSoap {
-  invoke: (
-    input: InvokeInput,
-    cb: (
-      err: any | null,
-      result: InvokeOutput,
-      raw: string,
-      soapHeader: { [k: string]: any }
-    ) => any,
-    options?: any,
-    extraHeaders?: any
-  ) => void;
-}
 
 export const app = express();
 
@@ -45,67 +20,44 @@ const serverWSDL = require("fs").readFileSync("./soap/SCService.wsdl", "utf8");
 
 const parser = new soap.WSDL(
   serverWSDL,
-  "http://127.0.0.1:8081/services/SCService?wsdl",
-  {}
+  "http://127.0.0.1:8080/services/SUService?wsdl",
+  {
+    ignoredNamespaces: {
+      namespaces: ["intf", "impl"],
+      override: true,
+    },
+    escapeXML: false,
+    useEmptyTag: true,
+  }
 );
 
 const getRequest = (command: string, code: number | string, data: object) => {
   const unit = useUnitStore.getState();
+
   return {
-    xmlData: {
-      Request: {
-        PK_Type: {
-          Name: command,
-          Code: `${code}`,
-        },
-        Info: {
-          SUId: unit.unitId,
-          SURid: unit.resourceId || "",
-          ...data,
+    xmlData: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
+      {
+        Request: {
+          PK_Type: {
+            Name: command,
+            Code: `${code}`,
+          },
+          Info: {
+            SUId: unit.unitId,
+            SURid: unit.resourceId || "",
+            ...data,
+          },
         },
       },
-    },
+      "invoke",
+      "",
+      "http://SUService.chinaunicom.com"
+    )}`,
   };
-  // return {
-  //   xmlData: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
-  //     {
-  //       Request: {
-  //         PK_Type: {
-  //           Name: command,
-  //           Code: `${code}`,
-  //         },
-  //         Info: {
-  //           SUId: unit.unitId,
-  //           SURid: unit.resourceId || "",
-  //           ...data,
-  //         },
-  //       },
-  //     },
-  //     "invoke",
-  //     "",
-  //     "http://SUService.chinaunicom.com"
-  //   )}
-  // `,
-  // };
 };
 
 const getResponse = (command: string, code: number | string, data: object) => {
   const unit = useUnitStore.getState();
-  return {
-    invokeReturn: {
-      Response: {
-        PK_Type: {
-          Name: command,
-          Code: `${code}`,
-        },
-        Info: {
-          SUId: unit.unitId,
-          SURid: unit.resourceId || "",
-          ...data,
-        },
-      },
-    },
-  };
   return {
     invokeReturn: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
       {
@@ -124,15 +76,18 @@ const getResponse = (command: string, code: number | string, data: object) => {
       "invokeResponse",
       "",
       "http://SUService.chinaunicom.com"
-    )}
-    `,
+    )}`,
   };
 };
 
-const handleRequest = (payload: any) => {
+const handleRequest = (payload: SoapRequest) => {
   switch (`${payload.Request.PK_Type.Code}`) {
-    case "101":
-      return getResponse("LOGIN_ACK", "102", {});
+    default:
+      return getResponse(
+        `${payload.Request.PK_Type.Name}_ACK`,
+        `${parseInt(payload.Request.PK_Type.Code, 10) + 1}`,
+        {}
+      );
   }
 };
 
@@ -140,24 +95,13 @@ const handleRequest = (payload: any) => {
 const MockService = {
   SCServiceService: {
     SCService: {
-      invoke: async function ({ xmlData }: { xmlData: any }) {
-        console.log(xmlData);
+      invoke: async function ({ xmlData }: { xmlData: string }) {
         if (_.isString(xmlData)) {
-          const command = parser.xmlToObject(xmlData) as {
-            Request: {
-              PK_Type: { Name: string; Code: string };
-              Info: { SUId: string; SURId: string };
-            };
-          };
+          const command = parser.xmlToObject(xmlData) as SoapRequest;
           return handleRequest(command);
         } else {
           return handleRequest(xmlData);
         }
-        return {
-          invokeReturn: {
-            $value: "不支持的指令",
-          },
-        };
       },
     },
   },
@@ -173,14 +117,10 @@ const createSoapServer = (app: Express) => {
       console.log("B接口WebService服务已启动，路径为/services/SCService...");
     }
   );
-  server.log = (type, data) => console.log("SC:", type, data);
+  server.log = soapLogger;
   return server;
 };
 const server = createServer(app);
-
-const io = getSocketInstance(server);
-
-getDeviceRoutes(app);
 
 app.use(ExpressErrorHandler);
 
@@ -188,15 +128,15 @@ const wsdlOptions = {
   valueKey: "value",
   attributesKey: "attributes",
   useEmptyTag: true,
-  ignoredNamespaces: true,
+  ignoredNamespaces: ["inft", "impl"],
   overrideImportLocation: (location: string) => {
-    return "https://127.0.0.1:8080/services/SUService.wsdl";
+    return "http://127.0.0.1:8080/services/SUService?wsdl";
   },
 };
 
 // 创建SOAP客户端
 const createClient = async (endpoint: string) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     if (endpoint) {
       soap.createClient(endpoint, wsdlOptions, (error, client) => {
         if (error) {
@@ -221,7 +161,7 @@ export class SoapClient {
     if (!SoapClient.client) {
       try {
         SoapClient.client = (await createClient(
-          "https://127.0.0.1:8080/services/SUService.wsdl"
+          "http://127.0.0.1:8080/services/SUService?wsdl"
         )) as IServiceSoap;
       } catch (error) {
         throw new Error("所有服务器地址均不可达");
@@ -235,6 +175,10 @@ export class SoapClient {
           if (error) {
             reject(error);
           }
+          console.log(
+            `${command}指令执行成功`,
+            `返回值:${JSON.stringify(result)}`
+          );
           resolve(result);
         }
       );

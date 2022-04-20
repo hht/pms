@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { useDashboardStore } from "../store";
+import { useDashboardStore, useEventStore } from "../store";
 
 const STATE = [
   { key: 0, value: "正在链接中" },
@@ -37,6 +37,10 @@ const useWebsocket = (url: string) => {
       });
       socket.on("valueReceived", (data) => {
         useDashboardStore.getState().update(data);
+      });
+
+      socket.on("soapEvent", (data) => {
+        useEventStore.getState().append(data);
       });
 
       socket.on("connect_error", () => {

@@ -3,6 +3,7 @@ import "./styles/index.scss";
 import { Layout, Menu } from "antd";
 import { FC, useState } from "react";
 
+import Interface from "./views/Interface";
 import Emulator from "./views/Emulator";
 import Devices from "./views/Devices";
 import Unit from "./views/Unit";
@@ -35,6 +36,7 @@ const App: FC = () => {
           <Menu.Item key="3">告警日志</Menu.Item>
           <Menu.Item key="4">错误日志</Menu.Item>
           <Menu.Item key="5">串口调试</Menu.Item>
+          <Menu.Item key="6">B接口测试</Menu.Item>
         </Menu>
       </Header>
       <Content style={{ padding: 48, paddingTop: 112 }}>
@@ -46,6 +48,7 @@ const App: FC = () => {
         {current === "5" ? (
           <Emulator {...{ message, socket, readyState }} />
         ) : null}
+        {current === "6" ? <Interface /> : null}
       </Content>
     </Layout>
   );

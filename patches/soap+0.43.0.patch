@@ -1,0 +1,22 @@
+diff --git a/node_modules/soap/lib/wsdl/index.js b/node_modules/soap/lib/wsdl/index.js
+index f9ced38..4265ccd 100644
+--- a/node_modules/soap/lib/wsdl/index.js
++++ b/node_modules/soap/lib/wsdl/index.js
+@@ -44,6 +44,8 @@ var WSDL = /** @class */ (function () {
+         this.ignoreBaseNameSpaces = false;
+         this.valueKey = '$value';
+         this.xmlKey = '$xml';
++        this.useEmptyTag=true;
++        this.attributesKey="attributes";
+         var fromFunc;
+         this.uri = uri;
+         this.callback = function () { };
+@@ -1028,6 +1030,8 @@ var WSDL = /** @class */ (function () {
+         }
+         this.options.valueKey = options.valueKey || this.valueKey;
+         this.options.xmlKey = options.xmlKey || this.xmlKey;
++        this.options.attributesKey=options.attributesKey||this.attributesKey
++        this.options.useEmptyTag=options.useEmptyTag||this.useEmptyTag
+         if (options.escapeXML !== undefined) {
+             this.options.escapeXML = options.escapeXML;
+         }

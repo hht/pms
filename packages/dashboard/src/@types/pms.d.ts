@@ -125,3 +125,5 @@ interface Template {
   protocol: string;
   components: { [key: string]: Signal[][] };
 }
+
+declare module "react-xml-viewer";

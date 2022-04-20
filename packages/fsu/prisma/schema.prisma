@@ -27,7 +27,7 @@ model Unit {
   manufacturer  String?   @default("")
   interval      Int       @default(60)
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime
   reportedAt    DateTime?
   heartBeat     Int       @default(6000)
   longitude     Float     @default(126.642)
@@ -71,6 +71,7 @@ model Device {
   baudRate Int     @default(9600)
   timeout  Int     @default(3000)
 
+  createdAt DateTime  @default(now())
   updatedAt DateTime?
   signals   Signal[]
 }
