@@ -74,7 +74,7 @@ export const upsertFTP = async (
   unit: Pick<Unit, "userName" | "password" | "id">
 ) => {
   if (!unit.userName || !unit.password) {
-    throw "用户名和密码不能为空";
+    throw "用户名或密码不能为空";
   }
   const updated = await prisma.unit.update({
     where: { id: unit.id },
@@ -211,11 +211,11 @@ export const updateSignal = async (value: Signal) => {
 export const encodeDevice = async ({
   d,
   filter = (signal: Signal) => true,
-  command,
+  autoFill,
 }: {
   d: SoapDevice;
   filter: (signal: Signal) => boolean;
-  command: string;
+  autoFill?: boolean;
 }) => {
   const code = _.take(d.attributes.Id, 3).join("");
   const serial = _.takeRight(d.attributes.Id, 2).join("");
@@ -232,7 +232,7 @@ export const encodeDevice = async ({
     return {
       attributes: {
         ...d.attributes,
-        ...(["GET_DO_ACK", "GET_AlarmProperty_ACK"].includes(command)
+        ...(autoFill
           ? {
               Rid: device.resourceId,
               DeviceVender: device.manufacturer,
@@ -259,40 +259,29 @@ export const encodeDevice = async ({
 };
 
 export const encodeDevices: (
-  command: string,
-  code: string,
   devices: SoapDevice[],
   filter: (signal: Signal) => boolean,
-  mapper: (signal: Signal) => { [key: string]: string | number | null }
-) => Promise<[string, string, any]> = async (
-  command,
-  code,
-  devices,
-  filter,
-  mapper
-) => {
+  mapper: (signal: Signal) => { [key: string]: string | number | null },
+  autoFill?: boolean
+) => Promise<any> = async (devices, filter, mapper, autoFill = false) => {
   const response = await Promise.all(
-    devices.map(async (it) => await encodeDevice({ d: it, filter, command }))
+    devices?.map(async (it) => await encodeDevice({ d: it, filter, autoFill }))
   );
-  return [
-    command,
-    code,
-    {
-      DeviceList: {
-        Device: response.map((it) => ({
-          attributes: { ...it?.attributes },
-          Signal: it?.Signal?.map((it) => {
-            return {
-              attributes: {
-                Id: encodeSignalId(it as Signal),
-                ...mapper(it as Signal),
-              },
-            };
-          }),
-        })),
-      },
+  return {
+    DeviceList: {
+      Device: response.map((it) => ({
+        attributes: { ...it?.attributes },
+        Signal: it?.Signal?.map((it) => {
+          return {
+            attributes: {
+              Id: encodeSignalId(it as Signal),
+              ...mapper(it as Signal),
+            },
+          };
+        }),
+      })),
     },
-  ];
+  };
 };
 
 export const encodeSignalId = (signal: Signal, withState = false) => {
@@ -340,13 +329,13 @@ export const decodeDevices: (devices: SoapDevice[]) => Partial<Signal>[] = (
     .value();
 };
 
-export const encodeAlarm = (alarm: Alarm) => ({
+export const encodeAlarm = (alarm: Alarm, flag?: "BEGIN" | "END") => ({
   SerialNo: _.padStart(`${alarm.id}`, 10, "0"),
   DeviceId: alarm.deviceId,
   DeviceRId: alarm.deviceResourceId,
   AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
   TriggerVal: alarm.value,
-  AlarmFlag: "BEGIN",
+  AlarmFlag: flag ?? "BEGIN",
   SignalId: alarm.signalId,
   AlarmDesc: alarm.description,
 });

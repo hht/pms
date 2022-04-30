@@ -1,4 +1,4 @@
-import _, { identity } from "lodash";
+import _ from "lodash";
 import { useUnitStore } from "../store";
 import {
   decodeDevices,
@@ -12,10 +12,38 @@ import dayjs from "dayjs";
 import { changeFtpUser, getSystemInfo } from "./system";
 import { SoapClient } from "./soap";
 import { SerialPort } from "serialport";
+import { getIdentity } from "../utils";
 
 type Operation = (
   ...payload: any
 ) => Promise<[command: string, code: number | string, data: any]>;
+
+const getValues = (data: Signal[]) => {
+  if (data.length) {
+    const valuesByDeviceId = _.chain(data)
+      .map((value) => ({ ...value, ...getIdentity(value) }))
+      .groupBy("deviceId")
+      .value();
+    const updated = _.keys(valuesByDeviceId).map((key) => {
+      const signals = valuesByDeviceId[key];
+      return {
+        attributes: {
+          Id: key,
+          Rid: signals[0].deviceResourceId,
+        },
+        Signal: signals.map((it) => ({
+          attributes: {
+            Id: it.signalId,
+            RecordTime: dayjs(it.updatedAt).format("YYYY-MM-DD HH:mm:ss"),
+          },
+          value: it.value,
+        })),
+      };
+    });
+    return updated;
+  }
+  return [];
+};
 
 // FSU注册
 export const bootstrap: Operation = async () => {
@@ -76,45 +104,156 @@ const setIP: Operation = async (ip: string) => {
 // 获取遥测量信息
 
 const getAnalogValues: Operation = async (devices: SoapDevice[]) => {
-  return await encodeDevices(
+  return [
     "GET_AIDATA_ACK",
     "202",
-    devices,
-    (it) => it.length !== 1,
-    (it) => ({ Value: `${it.value}` })
-  );
+    await encodeDevices(
+      devices,
+      (it) => it.length !== 1,
+      (it) => ({ Value: `${it.value}` })
+    ),
+  ];
 };
 
-// 获取遥测量信息
+// 上报遥测量信息
+export const setAnalogValues = async (data: any[]) => {
+  const values = getValues(data as Value[]);
+  if (values.length) {
+    SoapClient.invoke([
+      "SEND_AIDATA",
+      "203",
+      {
+        Values: {
+          DeviceList: {
+            Device: values,
+          },
+        },
+      },
+    ]).catch(async () => {
+      await prisma.history.create({
+        data: {
+          code: 205,
+          payload: JSON.stringify(data),
+        },
+      });
+    });
+  }
+};
 
+// 获取遥信量信息
 const getDigitalValues: Operation = async (devices: SoapDevice[]) => {
-  return await encodeDevices(
+  return [
     "GET_DIDATA_ACK",
     "302",
-    devices,
-    (it) => it.length === 1,
-    (it) => ({ Value: `${it.value}` })
-  );
+    await encodeDevices(
+      devices,
+      (it) => it.length === 1,
+      (it) => ({ Value: `${it.value}` })
+    ),
+  ];
+};
+
+// 上报遥信量信息
+export const setDigitalValues = async (data: any[]) => {
+  const values = getValues(data as Value[]);
+  if (values.length) {
+    SoapClient.invoke([
+      "SEND_DIDATA",
+      "303",
+      {
+        Values: {
+          DeviceList: {
+            Device: values,
+          },
+        },
+      },
+    ]).catch(async () => {
+      await prisma.history.create({
+        data: {
+          code: 605,
+          payload: JSON.stringify(data),
+        },
+      });
+    });
+  }
+};
+
+// 上报本地缓存记录
+export const sendLocalData = async (command: string, code: number) => {
+  const history = await prisma.history.findMany({
+    where: {
+      code,
+    },
+  });
+  const data = _.chain(history)
+    .map((it) => JSON.parse(it.payload))
+    .flatten()
+    .value();
+  if (history.length) {
+    switch (code) {
+      case 205:
+      case 305:
+        SoapClient.invoke([
+          command,
+          code,
+          {
+            Values: {
+              DeviceList: {
+                Device: getValues(data as Value[]),
+              },
+            },
+          },
+        ])
+          .then(async () => {
+            await prisma.history.deleteMany({
+              where: {
+                code,
+              },
+            });
+          })
+          .catch((e) => {});
+      case 605:
+        SoapClient.invoke([
+          command,
+          code,
+          {
+            TAalarmList: {
+              TAlarm: (data as Alarm[]).map((alarm) => encodeAlarm(alarm)),
+            },
+          },
+        ])
+          .then(async () => {
+            await prisma.history.deleteMany({
+              where: {
+                code,
+              },
+            });
+          })
+          .catch((e) => {});
+    }
+  }
 };
 
 // 获取遥调量信息
 const getParameters: Operation = async (devices: SoapDevice[]) => {
-  return await encodeDevices(
+  return [
     "GET_AODATA_ACK",
     "402",
-    devices,
-    (it) => true,
-    (it) => ({
-      SetValue: it.raw,
-      SHLimit: it.upperMajorLimit,
-      HLimit: it.upperMinorLimit,
-      LLimit: it.lowerMinorLimit,
-      SLLimit: it.lowerMajorLimit,
-      Threshold: it.threshold,
-      RelativeVal: it.thresholdPercent ?? null,
-      IntervalTime: it.interval ?? 0,
-    })
-  );
+    await encodeDevices(
+      devices,
+      (it) => true,
+      (it) => ({
+        SetValue: it.raw,
+        SHLimit: it.upperMajorLimit,
+        HLimit: it.upperMinorLimit,
+        LLimit: it.lowerMinorLimit,
+        SLLimit: it.lowerMajorLimit,
+        Threshold: it.threshold,
+        RelativeVal: it.thresholdPercent ?? null,
+        IntervalTime: it.interval ?? 0,
+      })
+    ),
+  ];
 };
 
 // 设置遥调量信息
@@ -133,13 +272,16 @@ const setParameters: Operation = async (devices: SoapDevice[]) => {
 
 // 获取所有监控点信息
 const getDevices: Operation = async (devices: SoapDevice[]) => {
-  return await encodeDevices(
+  return [
     "GET_DO_ACK",
     "502",
-    devices,
-    (it) => true,
-    (it) => ({})
-  );
+    await encodeDevices(
+      devices,
+      (it) => true,
+      (it) => ({}),
+      true
+    ),
+  ];
 };
 
 // 获取当前告警
@@ -151,7 +293,6 @@ const getCurrentAlarms: Operation = async (devices: SoapDevice[]) => {
           await encodeDevice({
             d: it,
             filter: (it) => !!it.alarm,
-            command: "602",
           })
       )
     )
@@ -176,12 +317,41 @@ const getCurrentAlarms: Operation = async (devices: SoapDevice[]) => {
     {
       Values: {
         TAalarmList: {
-          TAlarm: alarms.map(encodeAlarm),
+          TAlarm: alarms.map((alarm) => encodeAlarm(alarm)),
         },
       },
     },
   ];
 };
+
+// 发送告警
+export const sendAlarm = async (data: any[]) => {
+  if (data.length) {
+    const values = (data as { SerialNo: string }[]).map((it) => ({
+      ...it,
+      SerialNo: _.padStart(it.SerialNo, 10, "0"),
+    }));
+    SoapClient.invoke([
+      "SEND_ALARM",
+      "603",
+      {
+        Values: {
+          TAlarmList: {
+            TAlarm: values,
+          },
+        },
+      },
+    ]).catch(async () => {
+      await prisma.history.create({
+        data: {
+          code: 603,
+          payload: JSON.stringify(values),
+        },
+      });
+    });
+  }
+};
+
 // 获取FTP参数
 const getFTP: Operation = async () => {
   const unit = useUnitStore.getState();
@@ -333,16 +503,19 @@ const reboot: Operation = async () => {
 
 // 获取告警量配置
 const getAlarmProperties: Operation = async (devices: SoapDevice[]) => {
-  return await encodeDevices(
+  return [
     "GET_AlarmProperty_ACK",
     "1102",
-    devices,
-    () => true,
-    (it) => ({
-      BDelay: it.startDelay,
-      EDelay: it.endDelay,
-    })
-  );
+    await encodeDevices(
+      devices,
+      () => true,
+      (it) => ({
+        BDelay: it.startDelay,
+        EDelay: it.endDelay,
+      }),
+      true
+    ),
+  ];
 };
 
 // 设置告警量配置
@@ -610,6 +783,32 @@ export const handle: (method: string) => Promise<SoapParameter> = async (
           },
         },
       ]);
+    case "获取遥控量报文":
+      devices = await prisma.device.findMany({
+        include: { signals: true },
+      });
+      return [
+        "GET_DO",
+        "501",
+        {
+          DeviceList: {
+            Device: devices.map((device) => {
+              return {
+                attributes: {
+                  Id: `${device.code}${device.serial}`,
+                  Rid: device?.resourceId,
+                },
+                Signal:
+                  Math.random() < 0.5
+                    ? device.signals.map((signal) => ({
+                        attributes: { Id: encodeSignalId(signal as Signal) },
+                      }))
+                    : [],
+              };
+            }),
+          },
+        },
+      ];
     case "获取当前告警":
       devices = await prisma.device.findMany({
         include: { signals: true },
@@ -656,14 +855,14 @@ export const handle: (method: string) => Promise<SoapParameter> = async (
         "SET_TIME",
         801,
         {
-          Time: {
-            Year: Y,
-            Month: M,
-            Day: D,
-            Hour: H,
-            Minute: m,
-            Second: s,
-          },
+          // Time: {
+          //   Year: Y,
+          //   Month: M,
+          //   Day: D,
+          //   Hour: H,
+          //   Minute: m,
+          //   Second: s,
+          // },
         },
       ];
     case "获取时间":

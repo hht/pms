@@ -7,6 +7,7 @@ import { createServer } from "http";
 import * as soap from "soap";
 import util from "util";
 import { useUnitStore } from "./store";
+import { handleResponse } from "./services/opetration";
 
 util.inspect.defaultOptions.depth = null;
 
@@ -151,8 +152,31 @@ const createClient = async (endpoint: string) => {
   });
 };
 
+// 调用函数
+const invoke = async ([command, code, data]: [
+  command: string,
+  code: number | string,
+  data: object
+]) =>
+  new Promise((resolve, reject) => {
+    SoapClient.client?.invoke(
+      getRequest(command, code, data),
+      (error, result, raw, ...rest) => {
+        if (error) {
+          reject(new Error(`${error.root.Envelope.Body.Fault?.Reason?.Text}`));
+        }
+        try {
+          const response = parser.xmlToObject(result.invokeReturn);
+          resolve(response);
+        } catch (e: any) {
+          reject(e.message);
+        }
+      }
+    );
+  });
+
 export class SoapClient {
-  private static client: IServiceSoap | null;
+  static client: IServiceSoap | null;
   static async invoke([command, code, data]: [
     command: string,
     code: number | string,
@@ -163,26 +187,28 @@ export class SoapClient {
         SoapClient.client = (await createClient(
           "http://127.0.0.1:8080/services/SUService?wsdl"
         )) as IServiceSoap;
-      } catch (error) {
-        throw new Error("所有服务器地址均不可达");
+      } catch (error: any) {
+        throw new Error("客户端创建失败");
       }
     }
-
-    return new Promise((resolve, reject) => {
-      SoapClient.client?.invoke(
-        getRequest(command, code, data),
-        (error, result, raw) => {
-          if (error) {
-            reject(error);
-          }
-          console.log(
-            `${command}指令执行成功`,
-            `返回值:${JSON.stringify(result)}`
-          );
-          resolve(result);
-        }
-      );
-    });
+    return await invoke([command, code, data])
+      .then((response) => {
+        return handleResponse(code, response as InvokeOutput)
+          .then(() => {
+            console.log(
+              `${command}指令执行成功`,
+              `返回值:${JSON.stringify(response)}`
+            );
+            return response;
+          })
+          .catch((e) => {
+            throw e;
+          });
+      })
+      .catch((error) => {
+        console.log(`${command}指令执行失败`, error.message);
+        throw error;
+      });
   }
 }
 

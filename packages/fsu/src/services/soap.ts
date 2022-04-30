@@ -1,6 +1,6 @@
-import _ from "lodash";
+import _, { reject } from "lodash";
 import * as soap from "soap";
-import { Express } from "express";
+import { Express, response } from "express";
 import { useUnitStore } from "../store";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
@@ -25,8 +25,6 @@ const parser = new soap.WSDL(
     useEmptyTag: true,
   }
 );
-
-console.log(parser.options);
 
 const getRequest = (command: string, code: number | string, data: object) => {
   const unit = useUnitStore.getState();
@@ -82,7 +80,8 @@ const getResponse = async (
     };
     return response;
   } catch (e) {
-    throw e;
+    console.log(e);
+    // throw e;
   }
 };
 
@@ -91,13 +90,26 @@ const SoapService = {
   SUServiceService: {
     SUService: {
       invoke: async ({ xmlData }: { xmlData: string }) => {
-        if (_.isString(xmlData)) {
-          const payload = parser.xmlToObject(xmlData) as SoapRequest;
-          const [command, code, data] = await handleRequest(payload);
-          return await getResponse(command, code, data);
-        } else {
-          const [command, code, data] = await handleRequest(xmlData);
-          return await getResponse(command, code, data);
+        try {
+          if (_.isString(xmlData)) {
+            const payload = parser.xmlToObject(xmlData) as SoapRequest;
+            const [command, code, data] = await handleRequest(payload);
+            return await getResponse(command, code, data);
+          } else {
+            const [command, code, data] = await handleRequest(xmlData);
+            return await getResponse(command, code, data);
+          }
+        } catch (e: any) {
+          throw {
+            Fault: {
+              Code: {
+                Value: 500,
+              },
+              Reason: {
+                Text: e.message,
+              },
+            },
+          };
         }
       },
     },
@@ -145,7 +157,7 @@ export const getEndpoint = async (ip?: string[]) => {
         );
         return client;
       } catch (e) {
-        throw new Error("所有服务器地址均不可达");
+        // throw new Error("所有服务器地址均不可达");
       }
     }
   }
@@ -165,9 +177,14 @@ const invoke = async ([command, code, data]: [
       getRequest(command, code, data),
       (error, result, raw) => {
         if (error) {
-          reject(error);
+          reject(error.root.Envelope.Body.Fault?.Reason?.Text);
         }
-        resolve(parser.xmlToObject(result.invokeReturn));
+        try {
+          const response = parser.xmlToObject(result.invokeReturn);
+          resolve(response);
+        } catch (e: any) {
+          reject(e.message);
+        }
       }
     );
   });
@@ -183,11 +200,10 @@ export class SoapClient {
     data: object
   ]) {
     if (!SoapClient.client) {
-      try {
-        SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
-      } catch (error: any) {
-        Events.emit(EVENT.ERROR_LOG, error.message);
+      SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
+      if (!SoapClient.client) {
         Events.emit(EVENT.DISCONNECTED, "所有服务器地址均不可达");
+        return;
       }
     }
     return await invoke([command, code, data])
@@ -206,7 +222,7 @@ export class SoapClient {
       })
       .catch((error) => {
         console.log(`${command}指令执行失败`, error.message);
-        // throw error;
+        throw error;
       });
   }
 }
@@ -217,7 +233,6 @@ export const handleInvoke = async (method: string, direction: boolean) => {
     return await SC.invoke(payload);
   } else {
     const payload = await handle(method);
-
     return await SoapClient.invoke(payload);
   }
 };

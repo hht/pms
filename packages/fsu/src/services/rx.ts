@@ -1,20 +1,24 @@
 import { EventEmitter } from "events";
 import _ from "lodash";
 import { fromEvent, map, mergeAll, toArray, windowTime } from "rxjs";
-import { prisma } from "./orm";
+import { encodeAlarm, prisma } from "./orm";
 import { EVENT } from "../models/enum";
 import dayjs from "dayjs";
 import { getEndpoint, SoapClient } from "./soap";
-import { bootstrap } from "./opetration";
-import { getSignalState } from "../utils";
+import {
+  bootstrap,
+  sendAlarm,
+  sendLocalData,
+  setAnalogValues,
+  setDigitalValues,
+} from "./opetration";
+import { getIdentity, getSignalState } from "../utils";
 export class Events {
   static events: EventEmitter = new EventEmitter();
   static emit(event: string, data: any) {
     Events.events.emit(event, data);
   }
 }
-
-type ALARM_STATE = "待上传" | "已上传" | "已清除" | "已取消";
 
 const valueChanged = (data: Value) => {
   // 如果已到采样间隔时间，则发送采样消息,默认10分钟
@@ -39,47 +43,6 @@ const valueChanged = (data: Value) => {
   return false;
 };
 
-const getIdentity = (data: Signal) => {
-  const [deviceCode, deviceSerial, signalType, signalCode, signalSerial] =
-    data.id.split("-");
-
-  return {
-    deviceId: `${deviceCode}${deviceSerial}`,
-    deviceResourceId: "",
-    signalId: `${deviceCode}${signalType}${signalCode}${getSignalState(
-      data,
-      data.raw!
-    )}${signalSerial}`,
-  };
-};
-
-const getValues = (data: Signal[]) => {
-  if (data.length) {
-    const valuesByDeviceId = _.chain(data)
-      .map((value) => ({ ...value, ...getIdentity(value) }))
-      .groupBy("deviceId")
-      .value();
-    const updated = _.keys(valuesByDeviceId).map((key) => {
-      const signals = valuesByDeviceId[key];
-      return {
-        attributes: {
-          Id: key,
-          Rid: signals[0].deviceResourceId,
-        },
-        Signal: signals.map((it) => ({
-          attributes: {
-            Id: it.signalId,
-            RecordTime: dayjs(it.updatedAt).format("YYYY-MM-DD HH:mm:ss"),
-          },
-          value: it.value,
-        })),
-      };
-    });
-    return updated;
-  }
-  return [];
-};
-
 // 收到采样点信息
 const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
   async (data) => {
@@ -95,7 +58,6 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
         data
       );
     }
-
     // 更新采样点信息
     await prisma.signal.update({
       data: {
@@ -142,7 +104,7 @@ const alarmDisappeared = async (data: Value, id: number, delay?: number) => {
           id: data.id,
         },
       });
-      // 如果采样点告警未变化，则发送清除告警消息
+      // 如果采样点告警未变化，则清除告警消息
       if (signal?.alarm === id) {
         const alarm = await prisma.alarm.findFirst({
           where: {
@@ -150,23 +112,6 @@ const alarmDisappeared = async (data: Value, id: number, delay?: number) => {
           },
         });
         if (alarm) {
-          // 如果告警已上传，则需要发送告警清除消息
-          if (alarm.state === "已上传") {
-            // 发送告警清除消息
-            const { deviceId, deviceResourceId, signalId } = getIdentity(
-              signal as unknown as Value
-            );
-            Events.emit(EVENT.ALARM_SETTLE, {
-              SerialNo: signal.alarm,
-              DeviceId: deviceId,
-              DeviceRId: deviceResourceId,
-              AlarmTime: dayjs(clearedAt).format("YYYY-MM-DD HH:mm:ss"),
-              TriggerVal: signal.value,
-              AlarmFlag: "END",
-              SignalId: signalId,
-              AlarmDesc: alarm.description,
-            });
-          }
           await prisma.alarm.update({
             data: {
               state: alarm?.state === "已上传" ? "已清除" : "已取消",
@@ -176,7 +121,12 @@ const alarmDisappeared = async (data: Value, id: number, delay?: number) => {
               id: signal.alarm,
             },
           });
+          // 如果告警已上传，则需要发送告警清除消息
+          if (alarm.state === "已上传") {
+            Events.emit(EVENT.ALARM_SETTLE, encodeAlarm(alarm, "END"));
+          }
         }
+        // 清除采样点告警标志
         await prisma.signal.update({
           data: {
             alarm: null,
@@ -209,19 +159,7 @@ const alarmOccured = async (data: Value, id: number) => {
           id: signal.alarm,
         },
       });
-      const { deviceId, deviceResourceId, signalId } = getIdentity(
-        signal as unknown as Value
-      );
-      Events.emit(EVENT.ALARM_SETTLE, {
-        SerialNo: signal.alarm,
-        DeviceId: deviceId,
-        DeviceRId: deviceResourceId,
-        AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
-        TriggerVal: alarm.value,
-        AlarmFlag: "BEGIN",
-        SignalId: signalId,
-        AlarmDesc: alarm.description,
-      });
+      Events.emit(EVENT.ALARM_SETTLE, encodeAlarm(alarm));
     }
   }, (data.startDelay || 0) * 1000);
 };
@@ -229,57 +167,15 @@ const alarmOccured = async (data: Value, id: number) => {
 // 模拟量采样点变化信息,每10秒批量上传一次
 const analogValueChanged$ = fromEvent(Events.events, EVENT.ANALOG_VALUE_CHANGED)
   .pipe(windowTime(10000), map(toArray()), mergeAll())
-  .subscribe(async (data) => {
-    const values = getValues(data as Value[]);
-    // 上报采样点信息
-    if (values.length) {
-      SoapClient.invoke([
-        "SEND_AIDATA",
-        203,
-        {
-          DeviceList: {
-            Device: values,
-          },
-        },
-      ]).catch(async () => {
-        // await prisma.history.create({
-        //   data: {
-        //     code: 203,
-        //     payload: JSON.stringify(values),
-        //   },
-        // });
-      });
-    }
-  });
+  .subscribe(setAnalogValues);
 
-// 模拟量采样点变化信息,每10秒批量上传一次
+// 数字量采样点变化信息,每10秒批量上传一次
 const digitalValueChanged$ = fromEvent(
   Events.events,
   EVENT.DIGITAL_VALIE_CHANGED
 )
   .pipe(windowTime(10000), map(toArray()), mergeAll())
-  .subscribe(async (data) => {
-    const values = getValues(data as Value[]);
-    // 上报采样点信息
-    if (values.length) {
-      SoapClient.invoke([
-        "SEND_DI",
-        303,
-        {
-          DeviceList: {
-            Device: values,
-          },
-        },
-      ]).catch(async () => {
-        // await prisma.history.create({
-        //   data: {
-        //     code: 303,
-        //     payload: JSON.stringify(values),
-        //   },
-        // });
-      });
-    }
-  });
+  .subscribe(setDigitalValues);
 
 // 告警
 const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
@@ -327,28 +223,7 @@ const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
 // 告警变化消息，每10秒批量上传一次
 const alarmChanged$ = fromEvent(Events.events, EVENT.ALARM_SETTLE)
   .pipe(windowTime(10000), map(toArray()), mergeAll())
-  .subscribe(async (data) => {
-    if (data.length) {
-      const values = (data as { SerialNo: string }[]).map((it) => ({
-        TAlarm: { ...it, SerialNo: _.padStart(it.SerialNo, 10, "0") },
-      }));
-      // 上报采样点信息
-      SoapClient.invoke([
-        "SEND_ALARM",
-        603,
-        {
-          TAlarmList: values,
-        },
-      ]).catch(async () => {
-        await prisma.history.create({
-          data: {
-            code: 603,
-            payload: JSON.stringify(values),
-          },
-        });
-      });
-    }
-  });
+  .subscribe(sendAlarm);
 
 // 错误日志
 const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
@@ -370,6 +245,9 @@ const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
       try {
         SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
         await SoapClient.invoke(await bootstrap());
+        await sendLocalData("SEND_HISAIDATA", 205);
+        await sendLocalData("SEND_HISDIDATA", 305);
+        await sendLocalData("SEND_HISALARM", 605);
       } catch (e) {
         Events.emit(EVENT.ERROR_LOG, "重新连接服务器失败");
       }

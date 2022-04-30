@@ -162,7 +162,12 @@ export const getDeviceRoutes = (app: Express) => {
     "/interface",
     ExpressAsyncNext(async (req, res) => {
       const { method, direction } = req.body;
-      res.json(await handleInvoke(method, direction));
+      try {
+        const response = await handleInvoke(method, direction);
+        res.json(response);
+      } catch (e: any) {
+        res.json("接口调用失败:" + e.message);
+      }
     })
   );
 };

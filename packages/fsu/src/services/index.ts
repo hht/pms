@@ -107,5 +107,10 @@ export const scheduleCron = async () => {
     }
   );
   // watchUpdate();
-  await SoapClient.invoke(await bootstrap());
+  await SoapClient.invoke(await bootstrap()).catch((e) => {
+    Events.emit(
+      EVENT.ERROR_LOG,
+      `登录SC失败,错误信息:${e.message || e || "未知错误"}`
+    );
+  });
 };

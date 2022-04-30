@@ -338,3 +338,17 @@ export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
   }
   return "00";
 };
+
+export const getIdentity = (data: Signal) => {
+  const [deviceCode, deviceSerial, signalType, signalCode, signalSerial] =
+    data.id.split("-");
+
+  return {
+    deviceId: `${deviceCode}${deviceSerial}`,
+    deviceResourceId: "",
+    signalId: `${deviceCode}${signalType}${signalCode}${getSignalState(
+      data,
+      data.raw!
+    )}${signalSerial}`,
+  };
+};

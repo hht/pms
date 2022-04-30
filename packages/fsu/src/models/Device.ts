@@ -243,7 +243,6 @@ export class IDevice {
         const v = (await attempt(() =>
           this.getDeviceValue(command)
         )) as Signal[];
-        // TODO 更新设备信息
         for (const value of v) {
           values.push({
             ...value,
@@ -261,11 +260,19 @@ export class IDevice {
         });
         Events.emit(
           EVENT.ERROR_LOG,
-          `设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`
+          `设备命令[${command}]读取失败,错误信息:${
+            error.message || error || "未知错误"
+          }`
         );
-        errors.push(`设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`);
+        errors.push(
+          `设备命令[${command}]读取失败,错误信息:${
+            error.message || error || "未知错误"
+          }`
+        );
         this.setStatus(
-          `设备命令[${command}]读取失败,错误信息:${error.message||error||'未知错误'}`
+          `设备命令[${command}]读取失败,错误信息:${
+            error.message || error || "未知错误"
+          }`
         );
       }
     }
