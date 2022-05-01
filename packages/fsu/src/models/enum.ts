@@ -20,6 +20,7 @@ export const EVENT = {
   ERROR_LOG: "errorLog",
   SOAP_EVENT: "soapEvent",
   DISCONNECTED: "disconnected",
+  DEVICE_ERROR: "deviceError",
 };
 
 export const ALTERNATING_VOLTAGE: T = {

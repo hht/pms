@@ -21,6 +21,10 @@ export class Events {
 }
 
 const valueChanged = (data: Value) => {
+  // 如果是设备采样失败，不上报采样点状态
+  if (data.raw === 0xffff) {
+    return false;
+  }
   // 如果已到采样间隔时间，则发送采样消息,默认10分钟
   if (
     (data.interval || 10) * 60 +
@@ -180,7 +184,7 @@ const digitalValueChanged$ = fromEvent(
 // 告警
 const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
   async (data) => {
-    const [prevState, currentState, recieved] = data as [
+    const [, currentState, recieved] = data as [
       SIGNAL_STATE,
       SIGNAL_STATE,
       Value
@@ -204,7 +208,9 @@ const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
           ...getIdentity(recieved),
           signal: recieved.name,
           value: `${recieved.value ?? ""}`,
-          description: `${recieved.name}发生告警,告警值${recieved.value},原始值${recieved.raw}`,
+          description: recieved.value?.toString().startsWith("采样失败")
+            ? `${recieved.value}`
+            : `${recieved.name}发生告警,告警值${recieved.value},原始值${recieved.raw}`,
         },
       });
       await prisma.signal.update({

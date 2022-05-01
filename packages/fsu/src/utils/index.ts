@@ -320,6 +320,9 @@ export const soapLogger = (type: string, data: any) => {
 };
 
 export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
+  if (value === 0xffff) {
+    return "05";
+  }
   // 信号量并且有正常值
   if (data.length === 1) {
     return value === data.normalValue ? "00" : "01";

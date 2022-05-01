@@ -192,4 +192,4 @@ type SoapDevice = {
   }[];
 };
 
-type SIGNAL_STATE = "00" | "01" | "02" | "03" | "04";
+type SIGNAL_STATE = "00" | "01" | "02" | "03" | "04" | "05";

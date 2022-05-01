@@ -255,25 +255,24 @@ export class IDevice {
           });
         }
       } catch (error: any) {
+        const message = `采样失败(${command}) : ${
+          error.message || error || "未知错误"
+        }`;
         useSerialPortStore.getState().update(this.instance.port, {
           buffer: Buffer.alloc(0),
         });
-        Events.emit(
-          EVENT.ERROR_LOG,
-          `设备命令[${command}]读取失败,错误信息:${
-            error.message || error || "未知错误"
-          }`
+
+        this.updateDeviceValues(
+          this.instance.signals
+            .filter((it) => it.command === command)
+            .map((it) => ({
+              ...it,
+              raw: 0xffff,
+              value: message,
+            }))
         );
-        errors.push(
-          `设备命令[${command}]读取失败,错误信息:${
-            error.message || error || "未知错误"
-          }`
-        );
-        this.setStatus(
-          `设备命令[${command}]读取失败,错误信息:${
-            error.message || error || "未知错误"
-          }`
-        );
+        errors.push(message);
+        this.setStatus(message);
       }
     }
     useSerialPortStore.getState().update(this.instance.port, {
