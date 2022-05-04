@@ -245,17 +245,22 @@ const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
 
 // 中断后重新连接,间隔60秒
 const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
-  .pipe(windowTime(60 * 1000), map(toArray()), mergeAll())
+  .pipe(windowTime(10 * 1000), map(toArray()), mergeAll())
   .subscribe(async (data) => {
+    console.log(data);
     if (data.length) {
       try {
         SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
+        if (!SoapClient.client) {
+          Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
+          return;
+        }
         await SoapClient.invoke(await bootstrap());
         await sendLocalData("SEND_HISAIDATA", 205);
         await sendLocalData("SEND_HISDIDATA", 305);
         await sendLocalData("SEND_HISALARM", 605);
       } catch (e) {
-        Events.emit(EVENT.ERROR_LOG, "重新连接服务器失败");
+        Events.emit(EVENT.DISCONNECTED, "连接服务器失败");
       }
     }
   });

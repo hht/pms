@@ -157,7 +157,7 @@ export const getEndpoint = async (ip?: string[]) => {
         );
         return client;
       } catch (e) {
-        // throw new Error("所有服务器地址均不可达");
+        // throw new Error("服务器连接失败");
       }
     }
   }
@@ -177,12 +177,18 @@ const invoke = async ([command, code, data]: [
       getRequest(command, code, data),
       (error, result, raw) => {
         if (error) {
-          reject(error.root.Envelope.Body.Fault?.Reason?.Text);
+          reject(
+            error.root?.Envelope.Body.Fault?.Reason?.Text ?? "服务器连接失败"
+          );
         }
         try {
           const response = parser.xmlToObject(result.invokeReturn);
           resolve(response);
         } catch (e: any) {
+          if (e.message.includes("ECONNREFUSED")) {
+            Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
+            SoapClient.client = null;
+          }
           reject(e.message);
         }
       }
@@ -200,11 +206,8 @@ export class SoapClient {
     data: object
   ]) {
     if (!SoapClient.client) {
-      SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
-      if (!SoapClient.client) {
-        Events.emit(EVENT.DISCONNECTED, "所有服务器地址均不可达");
-        return;
-      }
+      Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
+      throw new Error("服务器连接失败");
     }
     return await invoke([command, code, data])
       .then((response) => {
