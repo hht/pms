@@ -1,4 +1,4 @@
-import _, { reject } from "lodash";
+import _, { isError, reject } from "lodash";
 import * as soap from "soap";
 import { Express, response } from "express";
 import { useUnitStore } from "../store";
@@ -80,7 +80,6 @@ const getResponse = async (
     };
     return response;
   } catch (e) {
-    console.log(e);
     // throw e;
   }
 };
@@ -155,12 +154,16 @@ export const getEndpoint = async (ip?: string[]) => {
             ),
           { timeout: 5000, maxAttempts: 3 }
         );
+        if (isError(client)) {
+          throw "服务器连接失败";
+        }
         return client;
       } catch (e) {
-        // throw new Error("所有服务器地址均不可达");
+        // throw new Error("服务器连接失败");
       }
     }
   }
+  return null;
   Events.emit(EVENT.ERROR_LOG, "SC地址未设置");
 };
 
@@ -176,14 +179,29 @@ const invoke = async ([command, code, data]: [
     SoapClient.client?.invoke(
       getRequest(command, code, data),
       (error, result, raw) => {
-        if (error) {
-          reject(error.root.Envelope.Body.Fault?.Reason?.Text);
-        }
         try {
+          if (error) {
+            throw (
+              error.root?.Envelope.Body.Fault?.Reason?.Text ??
+              error.message ??
+              error
+            );
+          }
+          if (!result) {
+            throw new Error("ECONNREFUSED");
+          }
           const response = parser.xmlToObject(result.invokeReturn);
           resolve(response);
         } catch (e: any) {
-          reject(e.message);
+          const error = e.message ?? e;
+          if (
+            error?.includes("ECONNREFUSED") ||
+            error?.includes("EHOSTUNREACH")
+          ) {
+            SoapClient.client = null;
+            Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
+          }
+          reject(error);
         }
       }
     );
@@ -200,11 +218,8 @@ export class SoapClient {
     data: object
   ]) {
     if (!SoapClient.client) {
-      SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;
-      if (!SoapClient.client) {
-        Events.emit(EVENT.DISCONNECTED, "所有服务器地址均不可达");
-        return;
-      }
+      Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
+      throw new Error("服务器连接失败");
     }
     return await invoke([command, code, data])
       .then((response) => {

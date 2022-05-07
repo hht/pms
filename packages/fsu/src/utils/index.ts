@@ -303,10 +303,10 @@ const inspect = (type: string, data: any) => {
 
 export const soapLogger = (type: string, data: any) => {
   if (type === "received") {
-    inspect("发送消息", data);
+    inspect("接收消息", data);
   }
   if (type === "replied") {
-    inspect("接收消息", data);
+    inspect("发送消息", data);
   }
   if (["received", "replied"].includes(type)) {
     SocketServer.instance?.emit(EVENT.SOAP_EVENT, {

@@ -243,6 +243,9 @@ export class IDevice {
         const v = (await attempt(() =>
           this.getDeviceValue(command)
         )) as Signal[];
+        if (_.isError(v)) {
+          throw v;
+        }
         for (const value of v) {
           values.push({
             ...value,

@@ -82,6 +82,7 @@ export const scheduleCron = async () => {
   console.log("---重启服务---");
   //   @ts-ignore 停止之前的定时任务
   await schedule.gracefulShutdown();
+  Events.emit(EVENT.DISCONNECTED, "重新连接服务器");
   // 重置设备
   await resetDevices();
   // 添加新的定时任务

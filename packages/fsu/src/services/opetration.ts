@@ -170,7 +170,7 @@ export const setDigitalValues = async (data: any[]) => {
     ]).catch(async () => {
       await prisma.history.create({
         data: {
-          code: 605,
+          code: 305,
           payload: JSON.stringify(data),
         },
       });
@@ -212,13 +212,14 @@ export const sendLocalData = async (command: string, code: number) => {
             });
           })
           .catch((e) => {});
+        return;
       case 605:
         SoapClient.invoke([
           command,
           code,
           {
             TAalarmList: {
-              TAlarm: (data as Alarm[]).map((alarm) => encodeAlarm(alarm)),
+              TAlarm: data,
             },
           },
         ])
@@ -230,6 +231,7 @@ export const sendLocalData = async (command: string, code: number) => {
             });
           })
           .catch((e) => {});
+        return;
     }
   }
 };
@@ -344,7 +346,7 @@ export const sendAlarm = async (data: any[]) => {
     ]).catch(async () => {
       await prisma.history.create({
         data: {
-          code: 603,
+          code: 605,
           payload: JSON.stringify(values),
         },
       });
@@ -497,7 +499,7 @@ const getPorts: Operation = async () => {
 
 // 重启设备
 const reboot: Operation = async () => {
-  // require("child_process").exec("sudo /sbin/shutdown -h 3", console.log);
+  require("child_process").exec("sudo /sbin/shutdown -h 3", console.log);
   return await ["SET_SUREBOOT_ACK", "1002", { Result: 1 }];
 };
 
