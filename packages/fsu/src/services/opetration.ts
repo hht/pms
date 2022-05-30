@@ -499,7 +499,10 @@ const getPorts: Operation = async () => {
 
 // 重启设备
 const reboot: Operation = async () => {
-  require("child_process").exec("sudo /sbin/shutdown -h 3", console.log);
+  require("child_process").exec(
+    "sleep 3 && sudo /sbin/shutdown -r now",
+    console.log
+  );
   return await ["SET_SUREBOOT_ACK", "1002", { Result: 1 }];
 };
 
