@@ -27,6 +27,7 @@ app.post(
   "/message",
   ExpressAsyncNext(async (req, res) => {
     const { type } = req.body;
+    let message = "";
     switch (type) {
       case "SMS":
         const {
@@ -34,16 +35,34 @@ app.post(
           templId = 1161739,
           params = ["PLC", "温度", "哈尔滨", "测试机房", "处理"],
         } = req.body;
-        const message = `{"type":"${type}","phoneNumbers":[${phoneNumbers
+        message = `{"type":"${type}","phoneNumbers":[${phoneNumbers
           .map((it: string) => `"${it}"`)
           .join(",")}],"templId":${templId},"params":[${params
           .map((it: string) => `"${escape(it).replace(/%/g, "\\")}"`)
           .join(",")}],"index": 0}`;
-        console.log(message);
-        await Device.send(message);
+        break;
+      case "dingtalk":
+        const {
+          robots = ["1"],
+          text,
+          isAtAll = false,
+          atMobiles = [],
+        } = req.body;
+        message = `{"type":"${type}","msgtype":"text","robots":[${robots.map(
+          (it: string) => `"${it}"`
+        )}], 
+        "text":{"content":"${escape(text).replace(/%/g, "\\")}"},
+        "at":{"atMobiles":[${atMobiles.map(
+          (it: string) => `"${it}"`
+        )}],"atUserIds":[],"isAtAll":${isAtAll}},
+        "index": 0}`;
+        break;
+      default:
+        break;
     }
-    console.log(type);
-    // res.json(await getPorts());
+    console.log(message);
+    await Device.send(message);
+
     res.json({ success: true });
   })
 );
