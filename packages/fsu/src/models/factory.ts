@@ -1,3 +1,4 @@
+import { Environment } from "./Environment";
 import { Temprature } from "./Temprature";
 import { YDT } from "./YDT";
 
@@ -12,6 +13,12 @@ export const bootstrapDevice = async (device: Device) => {
     switch (device.protocol) {
       default:
         return new Temprature(device);
+    }
+  }
+  if (device.controller === "环境监测") {
+    switch (device.protocol) {
+      default:
+        return new Environment(device);
     }
   }
   return null;

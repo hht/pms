@@ -160,6 +160,18 @@ export class IDevice {
         );
       }, this.instance.timeout);
       // 发送命令
+      console.log(
+        this.assembleCommand(
+          Buffer.from(
+            (
+              this.configuration["命令列表"] as {
+                [key: string]: string | number[];
+              }
+            )[command]
+          )
+        )
+      );
+
       useSerialPortStore.getState().ports[this.instance.port]?.port.write(
         this.assembleCommand(
           Buffer.from(
@@ -316,7 +328,7 @@ export class IDevice {
           .filter((it) => !!it.code)
           .groupBy("code")
           .mapValues((values) =>
-            _.orderBy(values, ["name"]).map((value, index) => ({
+            _.orderBy(values, ["name", "offset"]).map((value, index) => ({
               ...value,
               id: `${this.instance.code}-${this.instance.serial}-${
                 value.length === 1 ? 3 : 1

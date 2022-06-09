@@ -75,6 +75,7 @@ export const DIRECT_CURRENT: T = {
 export const DEVICE_CODE: { [key: string]: string } = {
   组合开关电源: "419",
   智能温湿度: "911",
+  环境监测: "911",
 };
 
 export const SIGNAL_CODE: { [key: string]: string } = {
@@ -110,8 +111,15 @@ export const SIGNAL_CODE: { [key: string]: string } = {
   模块通讯: "340",
   模块温度: "404",
   "模块限流点（百分数）": "A3B",
-  室内环境温度: "430",
   室内环境湿度: "432",
+  // 环境采集器数据
+  室内环境温度: "430",
+  烟感: "605",
+  水浸: "606",
+  门磁: "608",
+  输入相电压: "104",
+  蓄电池组总电压: "274",
+
   // 无规范定义数据，以X开始
   当前工作路号: "X01",
   "交流输入#1": "X02",
@@ -126,4 +134,7 @@ export const SIGNAL_CODE: { [key: string]: string } = {
   测点1温度: "X11",
   测点2温度: "X12",
   防雷器: "X13",
+  // 环境采集器通用数据
+  模拟量: "Z01",
+  开关量: "Z02",
 };

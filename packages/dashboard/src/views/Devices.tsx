@@ -17,8 +17,17 @@ import { useStore } from "../store";
 import { useReactive } from "ahooks";
 import Signals from "./Signals";
 
-const getModelList = () => {
-  return ["PSM-A", "TH-01"];
+const getModelList = (controller: string) => {
+  switch (controller) {
+    case "组合开关电源":
+      return ["PSM-A"];
+    case "智能温湿度":
+      return ["TH-01"];
+    case "环境监测":
+      return ["PSX-01"];
+    default:
+      return [];
+  }
 };
 
 const upsertDevice = (values: Device) =>
@@ -215,7 +224,11 @@ const Devices: FC = () => {
       title: "设备类型",
       dataIndex: "controller",
       width: "m",
-      valueEnum: { 组合开关电源: "组合开关电源", 智能温湿度: "智能温湿度" },
+      valueEnum: {
+        组合开关电源: "组合开关电源",
+        智能温湿度: "智能温湿度",
+        环境监测: "环境监测",
+      },
       formItemProps: {
         rules: [
           {
@@ -226,23 +239,31 @@ const Devices: FC = () => {
       },
     },
     {
-      dataIndex: "model",
-      title: "产品型号",
+      valueType: "dependency",
       width: "m",
-      valueType: "select",
       fieldProps: {
-        options: getModelList(),
+        name: ["controller"],
       },
-      formItemProps: {
-        rules: [
+      columns: ({ controller }) => {
+        return [
           {
-            required: true,
-            message: "此项为必填项",
+            dataIndex: "model",
+            title: "产品型号",
+            width: "m",
+            valueType: "select",
+            fieldProps: { options: getModelList(controller) },
+            formItemProps: {
+              rules: [
+                {
+                  required: true,
+                  message: "此项为必填项",
+                },
+              ],
+            },
           },
-        ],
+        ];
       },
     },
-
     {
       title: "串口号",
       dataIndex: "port",

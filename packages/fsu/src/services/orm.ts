@@ -337,8 +337,8 @@ export const encodeAlarm = (alarm: Alarm, flag?: "BEGIN" | "END") => ({
   TriggerVal: alarm.value,
   AlarmFlag: flag ?? "BEGIN",
   SignalId:
-    alarm.signalId.substring(0, 3) + alarm.signalId.substring(3, 4) === "1"
-      ? "2"
-      : "4" + alarm.signalId.substring(4),
+    alarm.signalId.substring(0, 3) +
+    (alarm.signalId.substring(3, 4) === "1" ? "2" : "4") +
+    alarm.signalId.substring(4),
   AlarmDesc: alarm.description,
 });

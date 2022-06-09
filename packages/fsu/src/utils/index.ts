@@ -349,9 +349,10 @@ export const getIdentity = (data: Signal) => {
   return {
     deviceId: `${deviceCode}${deviceSerial}`,
     deviceResourceId: "",
-    signalId: `${deviceCode}${signalType}${signalCode}${getSignalState(
-      data,
-      data.raw!
-    )}${signalSerial}`,
+    signalId: `${deviceCode}${signalType}${
+      data.code || signalCode
+    }${getSignalState(data, data.raw!)}${
+      data.index ? _.padStart(`${data.index}`, 3, "0") : signalSerial
+    }`,
   };
 };

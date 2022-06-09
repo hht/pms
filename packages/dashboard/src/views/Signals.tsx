@@ -18,7 +18,6 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import ProTable, { ActionType } from "@ant-design/pro-table";
-
 import { request, useRequest } from "../hooks/useRequest";
 
 import type { ProColumns } from "@ant-design/pro-table";
@@ -30,6 +29,15 @@ const renderEmpty = () => (
     description="该设备未配置采样点, 请首先配置设备"
   />
 );
+
+const SIGNAL_ENUM = {
+  "430": "温度",
+  "605": "烟感",
+  "606": "水浸",
+  "608": "门磁",
+  "104": "交流电压",
+  "274": "直流电压",
+};
 
 const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
   device,
@@ -101,7 +109,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       fixed: "left",
     },
     {
-      title: "监控点ID",
+      title: "监控点本地ID",
       dataIndex: "id",
       render: (id: any) => id.split("-").join(""),
       editable: false,
@@ -110,6 +118,28 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       title: "命令",
       dataIndex: "command",
       editable: false,
+    },
+    {
+      title: "采样点类型",
+      dataIndex: "code",
+      valueEnum: SIGNAL_ENUM,
+      editable: device?.controller === "环境监测" ? undefined : false,
+      render: (text, record, __, action) => {
+        if (
+          record.code &&
+          _.keys(SIGNAL_ENUM).includes(record.code) &&
+          device?.controller === "环境监测"
+        ) {
+          return _.get(SIGNAL_ENUM, record.code);
+        }
+        return record.code;
+      },
+    },
+    {
+      title: "采样点序列号",
+      dataIndex: "index",
+      valueType: "digit",
+      editable: device?.controller === "环境监测" ? undefined : false,
     },
     {
       title: "告警抑制",
