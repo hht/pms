@@ -109,6 +109,7 @@ model Signal {
 
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   deviceId Int
+  @@unique([deviceId, code, index])
 }
 
 model History {

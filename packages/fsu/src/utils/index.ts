@@ -352,7 +352,9 @@ export const getIdentity = (data: Signal) => {
     signalId: `${deviceCode}${signalType}${
       data.code || signalCode
     }${getSignalState(data, data.raw!)}${
-      data.index ? _.padStart(`${data.index}`, 3, "0") : signalSerial
+      _.isNumber(data.index)
+        ? _.padStart(`${data.index}`, 3, "0")
+        : signalSerial
     }`,
   };
 };

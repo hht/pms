@@ -260,12 +260,16 @@ const getParameters: Operation = async (devices: SoapDevice[]) => {
 
 // 设置遥调量信息
 const setParameters: Operation = async (devices: SoapDevice[]) => {
-  const updated = decodeDevices(devices);
+  const updated = await decodeDevices(devices);
   for (const signal of updated) {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        id: signal.id,
+        deviceId_code_index: {
+          code: signal.code!,
+          index: signal.index!,
+          deviceId: signal.deviceId!,
+        },
       },
     });
   }
@@ -525,12 +529,16 @@ const getAlarmProperties: Operation = async (devices: SoapDevice[]) => {
 
 // 设置告警量配置
 const setAlarmProperties: Operation = async (devices: SoapDevice[]) => {
-  const updated = decodeDevices(devices);
+  const updated = await decodeDevices(devices);
   for (const signal of updated) {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        id: signal.id,
+        deviceId_code_index: {
+          code: signal.code!,
+          index: signal.index!,
+          deviceId: signal.deviceId!,
+        },
       },
     });
   }

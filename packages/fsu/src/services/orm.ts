@@ -166,12 +166,7 @@ export const saveSignals = async (id: number, values: Signal[]) => {
     for (const value of values) {
       await prisma.signal.create({
         data: {
-          ...(_.omit(value, [
-            "enum",
-            "deviceId",
-            "index",
-            "updateAt",
-          ]) as Signal & {
+          ...(_.omit(value, ["enum", "deviceId", "updateAt"]) as Signal & {
             raw: number;
             value: string;
             normalValue: number;
@@ -287,46 +282,59 @@ export const encodeDevices: (
 export const encodeSignalId = (signal: Signal, withState = false) => {
   const [deviceCode, deviceSN, signalType, signalCode, signalSN] =
     signal.id.split("-");
-  return `${deviceCode}${signalType}${signalCode}${
+  return `${deviceCode}${signalType}${signal.code || signalCode}${
     withState ? getSignalState(signal, signal.raw!) : "00"
-  }${signalSN}`;
+  }${_.padStart(
+    `${_.isNumber(signal.index) ? signal.index : signalSN}`,
+    3,
+    "0"
+  )}`;
 };
 
-export const decodeDevices: (devices: SoapDevice[]) => Partial<Signal>[] = (
-  devices
-) => {
-  return _.chain(devices)
-    .map((it) => {
-      const deviceSN = _.takeRight(it.attributes.Id, 2).join("");
-      return (
-        it.Signal?.map((signal) => {
-          const [a, b, c, d, e, f, g, h, i, j] = signal.attributes.Id.split("");
-          return _.omitBy(
-            {
-              id: `${a}${b}${c}-${deviceSN}-${d}-${e}${f}${g}-${h}${i}${j}`,
-              ..._.mapValues(
-                {
-                  raw: signal.attributes.SetValue,
-                  upperMajorLimit: signal.attributes.SHLimit,
-                  upperMinorLimit: signal.attributes.HLimit,
-                  lowerMinorLimit: signal.attributes.LLimit,
-                  lowerMajorLimit: signal.attributes.SLLimit,
-                  threshold: signal.attributes.Threshold,
-                  thresholdPercent: signal.attributes.RelativeVal,
-                  interval: signal.attributes.IntervalTime,
-                  startDelay: signal.attributes.BDelay,
-                  endDelay: signal.attributes.EDelay,
-                },
-                (v) => _.parseInt(v ?? "NaN", 10)
-              ),
-            },
-            (it) => _.isNaN(it) || _.isNull(it) || _.isUndefined(it)
-          );
-        }) ?? ([] as Partial<Signal>)
-      );
-    })
-    .flatten()
-    .value();
+export const decodeDevices: (
+  devices: SoapDevice[]
+) => Promise<Partial<Signal & { deviceId: number }>[]> = async (devices) => {
+  const response = [];
+  for (const device of devices) {
+    const dev = await prisma.device.findFirst({
+      where: {
+        code: device.attributes.Id.substring(0, 3),
+        serial: device.attributes.Id.substring(3, 5),
+      },
+    });
+    response.push(
+      ...(device.Signal?.map((signal) => {
+        const [a, b, c, d, e, f, g, h, i, j, k, l] =
+          signal.attributes.Id.split("");
+        return _.omitBy(
+          {
+            id: `${a}${b}${c}-${k}${l}-${d}-${e}${f}${g}-${h}${i}${j}`,
+            deviceId: dev?.id,
+            code: `${e}${f}${g}`,
+            index: parseInt(`${h}${i}${j}`, 10),
+            ..._.mapValues(
+              {
+                raw: signal.attributes.SetValue,
+                upperMajorLimit: signal.attributes.SHLimit,
+                upperMinorLimit: signal.attributes.HLimit,
+                lowerMinorLimit: signal.attributes.LLimit,
+                lowerMajorLimit: signal.attributes.SLLimit,
+                threshold: signal.attributes.Threshold,
+                thresholdPercent: signal.attributes.RelativeVal,
+                interval: signal.attributes.IntervalTime,
+                startDelay: signal.attributes.BDelay,
+                endDelay: signal.attributes.EDelay,
+              },
+              (v) => _.parseInt(v ?? "NaN", 10)
+            ),
+          },
+          (it) => _.isNaN(it) || _.isNull(it) || _.isUndefined(it)
+        );
+      }) ?? ([] as Partial<Signal>[]))
+    );
+  }
+  console.log(response);
+  return response;
 };
 
 export const encodeAlarm = (alarm: Alarm, flag?: "BEGIN" | "END") => ({

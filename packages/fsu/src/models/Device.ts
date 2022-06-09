@@ -146,6 +146,7 @@ export class IDevice {
             .groupBy("code")
             .mapValues((values) =>
               _.orderBy(values, ["name"]).map((value, index) => ({
+                index,
                 ...value,
                 id: `${this.instance.code}-${this.instance.serial}-${
                   value.length === 1 ? 3 : 1
@@ -160,18 +161,6 @@ export class IDevice {
         );
       }, this.instance.timeout);
       // 发送命令
-      console.log(
-        this.assembleCommand(
-          Buffer.from(
-            (
-              this.configuration["命令列表"] as {
-                [key: string]: string | number[];
-              }
-            )[command]
-          )
-        )
-      );
-
       useSerialPortStore.getState().ports[this.instance.port]?.port.write(
         this.assembleCommand(
           Buffer.from(
@@ -330,6 +319,7 @@ export class IDevice {
           .mapValues((values) =>
             _.orderBy(values, ["name", "offset"]).map((value, index) => ({
               ...value,
+              index,
               id: `${this.instance.code}-${this.instance.serial}-${
                 value.length === 1 ? 3 : 1
               }-${value.code}-${_.padStart(`${index}`, 3, "0")}`,
@@ -413,7 +403,12 @@ export class IDevice {
       return;
     }
     // 如果此采样点需要上报,则发送消息
-    if (!prev.ignore && prev.enabled && !prev.code.startsWith("X")) {
+    if (
+      this.instance.activite &&
+      !prev.ignore &&
+      prev.enabled &&
+      !prev.code.startsWith("X")
+    ) {
       Events.emit(EVENT.VALUE_RECEIVED, {
         deviceId: this.instance.id,
         prev: prev.raw,

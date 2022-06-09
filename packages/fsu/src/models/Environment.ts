@@ -60,7 +60,6 @@ class Environment extends IDevice {
       values.push(data.readInt16BE(i + 3) / 100);
     }
 
-    console.log("数据", values);
     return (this.configuration["环境量"] as Signal[]).map((it, index) => ({
       ...it,
       code: SIGNAL_CODE[it.name],
