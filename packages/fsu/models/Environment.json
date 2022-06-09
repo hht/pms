@@ -1,0 +1,88 @@
+{
+  "命令列表": {
+    "环境量": [3, 0, 0, 0, 2]
+  },
+  "环境量": [
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 30,
+      "lowerMajorLimit": 20,
+      "upperMinorLimit": 60,
+      "upperMajorLimit": 70
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "模拟量",
+      "unit": "",
+      "length": 2,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    },
+    {
+      "name": "开关量",
+      "unit": "",
+      "length": 1,
+      "lowerMinorLimit": 20,
+      "lowerMajorLimit": 10,
+      "upperMinorLimit": 28,
+      "upperMajorLimit": 30
+    }
+  ]
+}

@@ -336,6 +336,9 @@ export const encodeAlarm = (alarm: Alarm, flag?: "BEGIN" | "END") => ({
   AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
   TriggerVal: alarm.value,
   AlarmFlag: flag ?? "BEGIN",
-  SignalId: alarm.signalId,
+  SignalId:
+    alarm.signalId.substring(0, 3) + alarm.signalId.substring(3, 4) === "1"
+      ? "2"
+      : "4" + alarm.signalId.substring(4),
   AlarmDesc: alarm.description,
 });
