@@ -146,11 +146,11 @@ export class IDevice {
             .groupBy("code")
             .mapValues((values) =>
               _.orderBy(values, ["name"]).map((value, index) => ({
-                index,
                 ...value,
+                index: value.index || index + 1,
                 id: `${this.instance.code}-${this.instance.serial}-${
                   value.length === 1 ? 3 : 1
-                }-${value.code}-${_.padStart(`${index}`, 3, "0")}`,
+                }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`,
                 command: command,
               }))
             )
@@ -322,7 +322,7 @@ export class IDevice {
               index,
               id: `${this.instance.code}-${this.instance.serial}-${
                 value.length === 1 ? 3 : 1
-              }-${value.code}-${_.padStart(`${index}`, 3, "0")}`,
+              }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`,
               command: command,
             }))
           )

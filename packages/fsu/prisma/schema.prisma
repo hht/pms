@@ -80,7 +80,7 @@ model Signal {
   id               String  @id @unique
   name             String
   code             String
-  index            Int?
+  index            Int
   raw              Float?
   value            String
   normalValue      Int?

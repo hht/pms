@@ -68,7 +68,6 @@ const resetDevices = async () => {
       ...device,
       signals: device.signals.map((signal) => ({
         ...signal,
-        index: signal.index || undefined,
         enum: signal.enum ? JSON.parse(signal.enum) : undefined,
       })),
     });

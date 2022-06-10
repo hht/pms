@@ -91,7 +91,7 @@ interface Signal {
   name: string;
   length: number;
   code: string;
-  index?: number;
+  index: number;
   ignore?: boolean;
   lowerMinorLimit: number | null;
   lowerMajorLimit: number | null;
