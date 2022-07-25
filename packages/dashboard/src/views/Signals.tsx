@@ -136,7 +136,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       },
     },
     {
-      title: "采样点序列号",
+      title: "采样点顺序号",
       dataIndex: "index",
       valueType: "digit",
       editable: device?.controller === "环境监测" ? undefined : false,

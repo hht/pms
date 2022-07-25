@@ -21,7 +21,7 @@ const serverWSDL = require("fs").readFileSync("./soap/SCService.wsdl", "utf8");
 
 const parser = new soap.WSDL(
   serverWSDL,
-  "http://127.0.0.1:8080/services/SUService?wsdl",
+  "http://127.0.0.1:8080/services/SCService?wsdl",
   {
     ignoredNamespaces: {
       namespaces: ["intf", "impl"],
@@ -185,7 +185,7 @@ export class SoapClient {
     if (!SoapClient.client) {
       try {
         SoapClient.client = (await createClient(
-          "http://127.0.0.1:8080/services/SUService?wsdl"
+          "http://127.0.0.1:8090/services/SUService?wsdl"
         )) as IServiceSoap;
       } catch (error: any) {
         throw new Error("客户端创建失败");
@@ -212,7 +212,7 @@ export class SoapClient {
   }
 }
 
-server.listen(8081, () => {
-  console.log("B接口模拟服务器正在8081端口运行...");
+server.listen(8080, () => {
+  console.log("B接口模拟服务器正在8080端口运行...");
   const soap = createSoapServer(app);
 });

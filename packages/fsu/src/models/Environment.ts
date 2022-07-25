@@ -55,7 +55,6 @@ class Environment extends IDevice {
     const data = this.getPayload();
     const values: number[] = [];
     const length = data.readInt8(2);
-    console.log(length, data);
     for (let i = 0; i < 20; i += 2) {
       values.push(data.readInt16BE(i + 3) / 100);
     }

@@ -53,7 +53,7 @@
 
       <wsdl:port binding="SCServiceSoapBinding" name="SCService">
 
-         <wsdlsoap:address location="http://127.0.0.1:8081/services/SCService"/>
+         <wsdlsoap:address location="http://192.168.8.91:8080/services/SCService"/>
 
       </wsdl:port>
 

@@ -333,7 +333,6 @@ export const decodeDevices: (
       }) ?? ([] as Partial<Signal>[]))
     );
   }
-  console.log(response);
   return response;
 };
 

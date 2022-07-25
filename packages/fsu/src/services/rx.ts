@@ -247,7 +247,6 @@ const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
 const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
   .pipe(windowTime(10 * 1000), map(toArray()), mergeAll())
   .subscribe(async (data) => {
-    console.log(data);
     if (data.length) {
       try {
         SoapClient.client = (await getEndpoint()) as unknown as IServiceSoap;

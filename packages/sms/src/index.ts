@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { createServer } from "http";
 import _ from "lodash";
+import { SerialPort } from "serialport";
 import { Device, getPorts } from "./Device";
 import { ExpressAsyncNext, ExpressErrorHandler } from "./utils";
 
