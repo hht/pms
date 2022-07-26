@@ -192,34 +192,23 @@ const Devices: FC = () => {
         ],
       },
     },
+
     {
-      valueType: "dependency",
+      dataIndex: "address",
+      title: "地址/局码",
       width: "m",
-      fieldProps: {
-        name: ["protocol"],
-      },
-      columns: ({ protocol }) => {
-        if (protocol === "Modbus") {
-          return [
-            {
-              dataIndex: "address",
-              title: "地址",
-              width: "m",
-              valueType: "digit",
-              formItemProps: {
-                rules: [
-                  {
-                    required: true,
-                    message: "此项为必填项",
-                  },
-                ],
-              },
-            },
-          ];
-        }
-        return [];
+      valueType: "digit",
+      initialValue: 1,
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: "此项为必填项",
+          },
+        ],
       },
     },
+
     {
       title: "设备类型",
       dataIndex: "controller",

@@ -96,6 +96,8 @@ class YDT extends IDevice {
    * @returns 组装后的数据
    */
   protected assembleCommand = (input: Buffer) => {
+    // 设置局码
+    input.writeInt16BE(this.instance.address ?? 1, 2);
     const [checksum] = this.getLengthChecksum(input, 8);
     input.write(`${checksum.toString(16).toUpperCase()}`, 8);
     const sum = [...input.valueOf()].reduce((prev, curr) => prev + curr, 0);
