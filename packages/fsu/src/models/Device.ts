@@ -25,7 +25,7 @@ export class IDevice {
   status: string = "工作正常";
   buffer: Buffer = Buffer.alloc(0);
   configuration: {
-    [key: string]: Signal[] | { [key: string]: string };
+    [key: string]: Signal[] | { [key: string]: string } | string[];
   } = {};
   constructor(device: Device) {
     this.instance = device;

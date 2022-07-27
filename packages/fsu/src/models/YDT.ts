@@ -43,6 +43,22 @@ const ALTERNATING_ALARM_STATE: { [key: number]: string } = {
 };
 
 /**
+ * 直流屏状态列表
+ */
+
+const DIRECT_ALARM_STATE: { [key: number]: string } = {
+  0x00: "正常",
+  0x01: "低于下限",
+  0x02: "高于上限",
+  0x03: "熔丝断",
+  0x04: "开关打开",
+  0x05: "传感器未接",
+  0x06: "传感器故障",
+  0xe1: "过温",
+  0xe2: "通讯中断",
+};
+
+/**
  * 开关状态
  */
 const POWER_STATE: { [key: number]: string } = {
@@ -65,6 +81,7 @@ const CHARGING_STATE: { [key: number]: string } = {
   0x00: "浮充",
   0x01: "均充",
   0x02: "测试",
+  0x03: "交流停电",
 };
 
 class YDT extends IDevice {
@@ -191,6 +208,8 @@ class YDT extends IDevice {
         return this.parseRectifierAlarms;
       case "直流屏模拟量":
         return this.parseDirectValues;
+      case "直流屏告警量":
+        return this.parseDirectAlarms;
       default:
         return () => [] as Signal[];
     }
@@ -283,6 +302,7 @@ class YDT extends IDevice {
    */
   private parseAlternatingStatus = () => {
     const data = this.getPayload();
+    console.log(JSON.stringify(data));
     let offset = 0;
     const response = [];
     const screenCount = data.readInt8(offset);
@@ -548,7 +568,7 @@ class YDT extends IDevice {
         }
         response.push({
           ...signal,
-          name: signal.name,
+          name: `整流模块#${i + 1}${signal.name}`,
           raw: data.readFloatLE(offset),
           code: SIGNAL_CODE[signal.name],
           offset,
@@ -724,30 +744,121 @@ class YDT extends IDevice {
         }
       }
       const customCount = data.readInt8(offset);
+      let currentCustomCount = 0;
       offset += 1;
-      for (let j = 0; j < groupCount; j++) {
-        for (const [index, signal] of (
-          this.configuration["直流屏电池组数据"] as Signal[]
-        ).entries()) {
+      for (const item of this.configuration[
+        "自定义直流屏模拟量数组"
+      ] as string[]) {
+        if (item === "直流屏电池组数据") {
+          for (let j = 0; j < groupCount; j++) {
+            for (const [index, signal] of (
+              this.configuration["直流屏电池组数据"] as Signal[]
+            ).entries()) {
+              if (currentCustomCount > customCount) {
+                break;
+              }
+              response.push({
+                ...signal,
+                name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
+                raw: data.readFloatLE(offset),
+                code: SIGNAL_CODE[signal.name],
+                offset,
+              });
+              currentCustomCount++;
+              offset += signal.length;
+            }
+          }
+        }
+        if (item === "自定义直流屏模拟量") {
+          const entries = this.configuration["自定义直流屏模拟量"] as Signal[];
+          for (const [index, signal] of entries.entries()) {
+            if (currentCustomCount > customCount) {
+              break;
+            }
+            response.push({
+              ...signal,
+              name: `直流屏#${i + 1}${signal.name}`,
+              raw: data.readFloatLE(offset),
+              code: SIGNAL_CODE[signal.name],
+              offset,
+            });
+            currentCustomCount++;
+            offset += signal.length;
+          }
+        }
+      }
+    }
+    return response as Signal[];
+  };
+  /**
+   * 直流屏告警量
+   * @returns
+   */
+  private parseDirectAlarms = () => {
+    const data = this.getPayload();
+    let offset = 0;
+    const response = [];
+    const count = data.readInt8(offset);
+    offset += 1;
+    for (let i = 0; i < count; i++) {
+      for (const signal of [
+        {
+          name: "直流电压",
+          length: 1,
+          enum: DIRECT_ALARM_STATE,
+          normalValue: 0x00,
+        },
+      ]) {
+        const value = data.readUInt8(offset);
+        response.push({
+          ...signal,
+          name: `整流模块#${i + 1}${signal.name}`,
+          raw: value,
+          code: SIGNAL_CODE[signal.name],
+          offset,
+        });
+        offset += signal.length;
+      }
+      const switchCount = data.readUInt8(offset);
+      offset += 1;
+      for (let j = 0; j < switchCount; j++) {
+        for (const signal of [
+          {
+            name: "融丝/开关",
+            length: 1,
+            enum: {
+              ...DIRECT_ALARM_STATE,
+              ...(this.configuration["直流屏告警状态"] as {
+                [key: number]: string;
+              }),
+            },
+            normalValue: 0x00,
+          },
+        ]) {
+          const value = data.readUInt8(offset);
           response.push({
             ...signal,
-            name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
-            raw: data.readFloatLE(offset),
+            name: `直流屏#${i + 1}${signal.name}#${j + 1}`,
+            raw: value,
             code: SIGNAL_CODE[signal.name],
             offset,
           });
           offset += signal.length;
         }
       }
-      const entries = this.configuration["自定义直流屏模拟量"] as Signal[];
-      for (const [index, signal] of entries.entries()) {
-        if (index > customCount - groupCount * entries.length - 1) {
+      const customCount = data.readUInt8(offset);
+      offset += 1;
+      for (const [index, signal] of (
+        this.configuration["自定义直流屏告警量"] as Signal[]
+      ).entries()) {
+        if (index > customCount - 1) {
           break;
         }
+        const value = data.readUInt8(offset);
         response.push({
           ...signal,
           name: `直流屏#${i + 1}${signal.name}`,
-          raw: data.readFloatLE(offset),
+          raw: value,
           code: SIGNAL_CODE[signal.name],
           offset,
         });
