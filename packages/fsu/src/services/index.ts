@@ -1,7 +1,7 @@
 /**
  * 采集程序
  */
-import { prisma } from "./orm";
+import { getUnit, prisma } from "./orm";
 import schedule from "node-schedule";
 import _ from "lodash";
 import { IDevice } from "../models/Device";
@@ -89,12 +89,15 @@ export const scheduleCron = async () => {
   schedule.scheduleJob(
     `*/${useUnitStore.getState().interval} * * * * *`,
     async () => {
+      const unit = await getUnit()
       for (const device of DEVICES) {
         // 如果设备没有暂停则执行获取设备实时数据操作
         if (device.instance.activite) {
           try {
             await device.getDeviceValues();
-            // const;
+            await new Promise(resolve=>setTimeout(() => {
+              resolve(true)
+            }, (unit.interval??0)*1000))
           } catch (e: any) {
             Events.emit(
               EVENT.ERROR_LOG,
