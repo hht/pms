@@ -20,7 +20,7 @@ import Signals from "./Signals";
 const getModelList = (controller: string) => {
   switch (controller) {
     case "组合开关电源":
-      return ["爱默生PSM-A", "爱默生M810G"];
+      return ["通用设备(电总协议)", "爱默生PSM-A", "爱默生M810G"];
     case "智能温湿度":
       return ["TH-01"];
     case "环境监测":

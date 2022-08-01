@@ -275,7 +275,7 @@
       "unit": "℃"
     },
     {
-      "name": "电池组#1电压",
+      "name": "电池组#1电池电压",
       "length": 4,
       "unit": "V",
       "lowerMinorLimit": 50,

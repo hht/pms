@@ -256,19 +256,20 @@ class YDT extends IDevice {
         }
         const customCount = data.readUInt8(offset);
         offset += 1;
-        for (let k = 0; k < customCount; k++) {
-          for (const signal of this.configuration[
-            "自定义交流屏模拟量"
-          ] as Signal[]) {
+        const customPoints = (this.configuration["自定义交流屏模拟量"] ??
+          []) as Signal[];
+        for (let c = 0; c < customCount; c++) {
+          if (customPoints[c]) {
+            const value = data.readUInt8(offset);
             response.push({
-              ...signal,
-              name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
-              raw: data.readFloatLE(offset),
-              code: SIGNAL_CODE[signal.name],
+              ...customPoints[c],
+              name: `交流屏#${i + 1}第${j + 1}路${customPoints[c].name}`,
+              raw: value,
+              code: SIGNAL_CODE[customPoints[c].name],
               offset,
             });
-            offset += signal.length;
           }
+          offset += customPoints[c]?.length ?? 4;
         }
       }
       for (const signal of [
@@ -302,7 +303,6 @@ class YDT extends IDevice {
    */
   private parseAlternatingStatus = () => {
     const data = this.getPayload();
-    console.log(JSON.stringify(data));
     let offset = 0;
     const response = [];
     const screenCount = data.readInt8(offset);
@@ -335,21 +335,20 @@ class YDT extends IDevice {
       }
       const customCount = data.readUInt8(offset);
       offset += 1;
-      for (const [index, signal] of (
-        this.configuration["自定义交流屏状态量"] as Signal[]
-      ).entries()) {
-        if (index > customCount - 1) {
-          break;
+      const customPoints = (this.configuration["自定义交流屏状态量"] ??
+        []) as Signal[];
+      for (let c = 0; c < customCount; c++) {
+        if (customPoints[c]) {
+          const value = data.readUInt8(offset);
+          response.push({
+            ...customPoints[c],
+            name: `交流屏#${i + 1}${customPoints[c].name}`,
+            raw: value,
+            code: SIGNAL_CODE[customPoints[c].name],
+            offset,
+          });
         }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          name: `交流屏#${i + 1}${signal.name}`,
-          raw: value,
-          code: SIGNAL_CODE[signal.name],
-          offset,
-        });
-        offset += signal.length;
+        offset += customPoints[c]?.length ?? 1;
       }
     }
     return response as Signal[];
@@ -452,21 +451,20 @@ class YDT extends IDevice {
         }
         const customCount = data.readUInt8(offset);
         offset += 1;
-        for (const [index, signal] of (
-          this.configuration["自定义交流屏告警量"] as Signal[]
-        ).entries()) {
-          if (index > customCount - 1) {
-            break;
+        const customPoints = (this.configuration["自定义交流屏告警量"] ??
+          []) as Signal[];
+        for (let c = 0; c < customCount; c++) {
+          if (customPoints[c]) {
+            const value = data.readUInt8(offset);
+            response.push({
+              ...customPoints[c],
+              name: `交流屏#${i + 1}${customPoints[c].name}`,
+              raw: value,
+              code: SIGNAL_CODE[customPoints[c].name],
+              offset,
+            });
           }
-          const value = data.readUInt8(offset);
-          response.push({
-            ...signal,
-            name: `交流屏#${i + 1}${signal.name}`,
-            raw: value,
-            code: SIGNAL_CODE[signal.name],
-            offset,
-          });
-          offset += signal.length;
+          offset += customPoints[c]?.length ?? 1;
         }
       }
       for (const signal of [
@@ -512,7 +510,7 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 1;
       }
     }
     return response as Signal[];
@@ -556,24 +554,24 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 4;
       }
       const customCount = data.readInt8(offset);
       offset += 1;
-      for (const [index, signal] of (
-        this.configuration["自定义整流模块模拟量"] as Signal[]
-      ).entries()) {
-        if (index > customCount - 1) {
-          break;
+      const customPoints = (this.configuration["自定义整流模块模拟量"] ??
+        []) as Signal[];
+      for (let c = 0; c < customCount; c++) {
+        if (customPoints[c]) {
+          const value = data.readFloatLE(offset);
+          response.push({
+            ...customPoints[c],
+            name: `整流模块#${i + 1}${customPoints[c].name}`,
+            raw: value,
+            code: SIGNAL_CODE[customPoints[c].name],
+            offset,
+          });
         }
-        response.push({
-          ...signal,
-          name: `整流模块#${i + 1}${signal.name}`,
-          raw: data.readFloatLE(offset),
-          code: SIGNAL_CODE[signal.name],
-          offset,
-        });
-        offset += signal.length;
+        offset += customPoints[c]?.length ?? 4;
       }
     }
     return response as Signal[];
@@ -614,25 +612,24 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 1;
       }
       const customCount = data.readInt8(offset);
       offset += 1;
-      for (const [index, signal] of (
-        this.configuration["自定义整流模块状态量"] as Signal[]
-      ).entries()) {
-        if (index > customCount - 1) {
-          break;
+      const customPoints = (this.configuration["自定义整流模块状态量"] ??
+        []) as Signal[];
+      for (let c = 0; c < customCount; c++) {
+        if (customPoints[c]) {
+          const value = data.readFloatLE(offset);
+          response.push({
+            ...customPoints[c],
+            name: `整流模块#${i + 1}${customPoints[c].name}`,
+            raw: value,
+            code: SIGNAL_CODE[customPoints[c].name],
+            offset,
+          });
         }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          name: `整流模块#${i + 1}${signal.name}`,
-          raw: value,
-          code: SIGNAL_CODE[signal.name],
-          offset,
-        });
-        offset += signal.length;
+        offset += customPoints[c]?.length ?? 1;
       }
     }
     return response as Signal[];
@@ -664,25 +661,24 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 1;
       }
       const customCount = data.readUInt8(offset);
       offset += 1;
-      for (const [index, signal] of (
-        this.configuration["自定义整流模块告警量"] as Signal[]
-      ).entries()) {
-        if (index > customCount - 1) {
-          break;
+      const customPoints = (this.configuration["自定义整流模块告警量"] ??
+        []) as Signal[];
+      for (let c = 0; c < customCount; c++) {
+        if (customPoints[c]) {
+          const value = data.readFloatLE(offset);
+          response.push({
+            ...customPoints[c],
+            name: `整流模块#${i + 1}${customPoints[c].name}`,
+            raw: value,
+            code: SIGNAL_CODE[customPoints[c].name],
+            offset,
+          });
         }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          name: `整流模块#${i + 1}${signal.name}`,
-          raw: value,
-          code: SIGNAL_CODE[signal.name],
-          offset,
-        });
-        offset += signal.length;
+        offset += customPoints[c]?.length ?? 1;
       }
     }
     return response as Signal[];
@@ -713,7 +709,7 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 4;
       }
       const groupCount = data.readInt8(offset);
       offset += 1;
@@ -726,7 +722,7 @@ class YDT extends IDevice {
             code: SIGNAL_CODE[signal.name],
             offset,
           });
-          offset += signal.length;
+          offset += signal.length ?? 4;
         }
       }
       const forkCount = data.readInt8(offset);
@@ -740,7 +736,7 @@ class YDT extends IDevice {
             code: SIGNAL_CODE[signal.name],
             offset,
           });
-          offset += signal.length;
+          offset += signal.length ?? 4;
         }
       }
       const customCount = data.readInt8(offset);
@@ -754,7 +750,7 @@ class YDT extends IDevice {
             for (const [index, signal] of (
               this.configuration["直流屏电池组数据"] as Signal[]
             ).entries()) {
-              if (currentCustomCount > customCount) {
+              if (currentCustomCount >= customCount) {
                 break;
               }
               response.push({
@@ -765,14 +761,14 @@ class YDT extends IDevice {
                 offset,
               });
               currentCustomCount++;
-              offset += signal.length;
+              offset += signal.length ?? 4;
             }
           }
         }
         if (item === "自定义直流屏模拟量") {
           const entries = this.configuration["自定义直流屏模拟量"] as Signal[];
           for (const [index, signal] of entries.entries()) {
-            if (currentCustomCount > customCount) {
+            if (currentCustomCount >= customCount) {
               break;
             }
             response.push({
@@ -783,10 +779,11 @@ class YDT extends IDevice {
               offset,
             });
             currentCustomCount++;
-            offset += signal.length;
+            offset += signal.length ?? 4;
           }
         }
       }
+      offset += (customCount - currentCustomCount) * 4;
     }
     return response as Signal[];
   };
@@ -817,7 +814,7 @@ class YDT extends IDevice {
           code: SIGNAL_CODE[signal.name],
           offset,
         });
-        offset += signal.length;
+        offset += signal.length ?? 1;
       }
       const switchCount = data.readUInt8(offset);
       offset += 1;
@@ -843,26 +840,25 @@ class YDT extends IDevice {
             code: SIGNAL_CODE[signal.name],
             offset,
           });
-          offset += signal.length;
+          offset += signal.length ?? 1;
         }
       }
       const customCount = data.readUInt8(offset);
       offset += 1;
-      for (const [index, signal] of (
-        this.configuration["自定义直流屏告警量"] as Signal[]
-      ).entries()) {
-        if (index > customCount - 1) {
-          break;
+      const customPoints = (this.configuration["自定义直流屏告警量"] ??
+        []) as Signal[];
+      for (let c = 0; c < customCount; c++) {
+        if (customPoints[c]) {
+          const value = data.readFloatLE(offset);
+          response.push({
+            ...customPoints[c],
+            name: `直流屏#${i + 1}${customPoints[c].name}`,
+            raw: value,
+            code: SIGNAL_CODE[customPoints[c].name],
+            offset,
+          });
         }
-        const value = data.readUInt8(offset);
-        response.push({
-          ...signal,
-          name: `直流屏#${i + 1}${signal.name}`,
-          raw: value,
-          code: SIGNAL_CODE[signal.name],
-          offset,
-        });
-        offset += signal.length;
+        offset += customPoints[c]?.length ?? 1;
       }
     }
     return response as Signal[];

@@ -113,6 +113,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       dataIndex: "id",
       render: (id: any) => id.split("-").join(""),
       editable: false,
+      width: 140,
     },
     {
       title: "命令",
