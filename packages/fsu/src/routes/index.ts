@@ -12,7 +12,7 @@ import {
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
 import { getPorts } from "../services/system";
-import { DEVICES, scheduleCron } from "../services";
+import { DEVICES, scheduleCron, SETTINGS } from "../services";
 import { handleInvoke } from "../services/soap";
 
 /**
@@ -31,6 +31,14 @@ export const getDeviceRoutes = (app: Express) => {
         ports,
         protocols,
       });
+    })
+  );
+  app.post(
+    "/debug",
+    ExpressAsyncNext(async (req, res) => {
+      const {isDebug} = req.body
+      SETTINGS.isDebug=isDebug
+      res.json({isDebug});
     })
   );
 

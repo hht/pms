@@ -11,7 +11,7 @@ const getModelList = () => {
 const getColor = (data: Signal) => {
   // 信号量并且有正常值
   if (data.length === 1) {
-    return data.raw === data.normalValue ? "#388E3C" : "#E64A19";
+    return data.raw === (data.normalValue ?? 0) ? "#388E3C" : "#E64A19";
   }
   if (data.upperMajorLimit && data.raw! > data.upperMajorLimit) {
     return "#E64A19";

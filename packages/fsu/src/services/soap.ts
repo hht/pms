@@ -163,8 +163,8 @@ export const getEndpoint = async (ip?: string[]) => {
       }
     }
   }
-  return null;
   Events.emit(EVENT.ERROR_LOG, "SC地址未设置");
+  return null;
 };
 
 // const wsdlInstance = new soap.WSDL(wsdl, endpoint, {});

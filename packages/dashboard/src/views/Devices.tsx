@@ -88,7 +88,7 @@ const Devices: FC = () => {
       dataIndex: "port",
     },
     {
-      title: "地址(Modbus协议)",
+      title: "地址/局码",
       dataIndex: "address",
     },
     {
@@ -110,9 +110,10 @@ const Devices: FC = () => {
           key="edit"
           columns={proColumns}
           layoutType="DrawerForm"
-          initialValues={record}
+          initialValues={{ timeout: 2000, ...record }}
           onFinish={async (values) => {
             await upsertDevice({ ...record, ...values });
+            actionRef.current?.reload();
             return true;
           }}
           trigger={<Button type="primary">编辑</Button>}
@@ -343,6 +344,7 @@ const Devices: FC = () => {
               layoutType="DrawerForm"
               onFinish={async (values) => {
                 await upsertDevice(values);
+                console.log(actionRef.current);
                 actionRef.current?.reload();
                 return true;
               }}

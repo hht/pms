@@ -12,9 +12,12 @@ import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
 import { SoapClient } from "./soap";
 import { bootstrap } from "./opetration";
+import { wait } from "../utils";
 
 export const DEVICES: IDevice[] = [];
-
+export const SETTINGS = {
+  isDebug:false
+}
 /**
  * 关闭串口
  * @param port 需要关闭的串口
@@ -83,21 +86,22 @@ export const scheduleCron = async () => {
   //   @ts-ignore 停止之前的定时任务
   await schedule.gracefulShutdown();
   Events.emit(EVENT.DISCONNECTED, "重新连接服务器");
+  await SoapClient.invoke(await bootstrap()).catch((e) => {
+    Events.emit(
+      EVENT.ERROR_LOG,
+      `登录SC失败,错误信息:${e.message || e || "未知错误"}`
+    );
+  });
   // 重置设备
   await resetDevices();
   // 添加新的定时任务
-  schedule.scheduleJob(
-    `*/${useUnitStore.getState().interval} * * * * *`,
-    async () => {
-      const unit = await getUnit()
+  while(true){
+    const unit = await getUnit()
       for (const device of DEVICES) {
         // 如果设备没有暂停则执行获取设备实时数据操作
-        if (device.instance.activite) {
+        if (!SETTINGS.isDebug && device.instance.activite) {
           try {
             await device.getDeviceValues();
-            await new Promise(resolve=>setTimeout(() => {
-              resolve(true)
-            }, (unit.interval??0)*1000))
           } catch (e: any) {
             Events.emit(
               EVENT.ERROR_LOG,
@@ -108,13 +112,6 @@ export const scheduleCron = async () => {
           }
         }
       }
+      await wait((unit.interval??10)*1000)
     }
-  );
-  // watchUpdate();
-  await SoapClient.invoke(await bootstrap()).catch((e) => {
-    Events.emit(
-      EVENT.ERROR_LOG,
-      `登录SC失败,错误信息:${e.message || e || "未知错误"}`
-    );
-  });
 };

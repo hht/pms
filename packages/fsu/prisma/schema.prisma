@@ -54,7 +54,7 @@ model Device {
   id           Int      @id @default(autoincrement())
   resourceId   String   @default("")
   code         String
-  serial       String   @unique
+  serial       String   
   name         String
   controller   String   @default("")
   protocol     String   @default("")

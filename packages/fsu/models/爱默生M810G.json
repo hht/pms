@@ -52,6 +52,7 @@
     {
       "name": "交流输入空开",
       "length": 1,
+      "code":"107",
       "normalValue": 0,
       "enum": {
         "0": "正常",
@@ -61,6 +62,7 @@
     {
       "name": "交流输出空开",
       "length": 1,
+      "code":"108",
       "normalValue": 0,
       "enum": {
         "0": "正常",
@@ -69,6 +71,7 @@
     },
     {
       "name": "防雷器",
+      "code":"109",
       "length": 1,
       "normalValue": 0,
       "enum": {
@@ -78,6 +81,7 @@
     },
     {
       "name": "交流输入#1",
+      "code":"150",
       "length": 1,
       "normalValue": 0,
       "enum": {
@@ -87,6 +91,7 @@
     },
     {
       "name": "交流输入#2",
+      "code":"150",
       "length": 1,
       "normalValue": 0,
       "enum": {
@@ -96,6 +101,7 @@
     },
     {
       "name": "交流输入#3",
+      "code":"150",
       "length": 1,
       "enum": {
         "0": "正常",
@@ -104,6 +110,7 @@
     },
     {
       "name": "交流屏通讯",
+      "code":"002",
       "length": 1,
       "normalValue": 0,
       "enum": {
@@ -262,21 +269,25 @@
     {
       "name": "温度1",
       "length": 4,
+      "code":"401",
       "unit": "℃"
     },
     {
       "name": "温度2",
       "length": 4,
+      "code":"401",
       "unit": "℃"
     },
     {
       "name": "温度3",
       "length": 4,
+      "code":"401",
       "unit": "℃"
     },
     {
       "name": "电池组#1电池电压",
       "length": 4,
+      "code":"271",
       "unit": "V",
       "lowerMinorLimit": 50,
       "lowerMajorLimit": 48,
@@ -286,11 +297,13 @@
     {
       "name": "电池组#1实际容量百分比",
       "length": 4,
+      "code":"279",
       "unit": "%"
     },
     {
       "name": "电池组#2电压",
       "length": 4,
+      "code":"271",
       "unit": "V",
       "lowerMinorLimit": 50,
       "lowerMajorLimit": 48,
@@ -300,11 +313,13 @@
     {
       "name": "电池组#2实际容量百分比",
       "length": 4,
+      "code":"279",
       "unit": "%"
     },
     {
       "name": "电池组#3电压",
       "length": 4,
+      "code":"271",
       "unit": "V",
       "lowerMinorLimit": 50,
       "lowerMajorLimit": 48,
@@ -314,11 +329,13 @@
     {
       "name": "电池组#3实际容量百分比",
       "length": 4,
+      "code":"279",
       "unit": "%"
     },
     {
       "name": "电池组#4电压",
       "length": 4,
+      "code":"271",
       "unit": "V",
       "lowerMinorLimit": 50,
       "lowerMajorLimit": 48,
@@ -327,6 +344,7 @@
     },
     {
       "name": "电池组#4实际容量百分比",
+      "code":"279",
       "length": 4,
       "unit": "%"
     }
@@ -362,6 +380,7 @@
     {
       "name": "温度1告警状态",
       "length": 1,
+      "code":"271",
       "enum": {
         "0": "正常",
         "1": "低于下限",
@@ -372,6 +391,7 @@
     {
       "name": "温度2告警状态",
       "length": 1,
+      "code":"271",
       "enum": {
         "0": "正常",
         "1": "低于下限",
@@ -382,6 +402,7 @@
     {
       "name": "温度3告警状态",
       "length": 1,
+      "code":"271",
       "enum": {
         "0": "正常",
         "1": "低于下限",
@@ -400,6 +421,7 @@
     {
       "name": "温度1传感器状态",
       "length": 1,
+      "code":"602",
       "enum": {
         "0": "正常",
         "6": "故障"
@@ -408,6 +430,7 @@
     {
       "name": "温度2传感器状态",
       "length": 1,
+      "code":"602",
       "enum": {
         "0": "正常",
         "6": "故障"
@@ -416,6 +439,7 @@
     {
       "name": "温度3传感器状态",
       "length": 1,
+      "code":"602",
       "enum": {
         "0": "正常",
         "6": "故障"
@@ -424,6 +448,7 @@
     {
       "name": "电池组1熔丝",
       "length": 1,
+      "code":"202",
       "enum": {
         "0": "正常",
         "3": "断开"
@@ -440,6 +465,7 @@
     {
       "name": "电池组2熔丝",
       "length": 1,
+      "code":"202",
       "enum": {
         "0": "正常",
         "3": "断开"
@@ -456,6 +482,7 @@
     {
       "name": "电池组3熔丝",
       "length": 1,
+      "code":"202",
       "enum": {
         "0": "正常",
         "3": "断开"
@@ -472,6 +499,7 @@
     {
       "name": "电池组4熔丝",
       "length": 1,
+      "code":"202",
       "enum": {
         "0": "正常",
         "3": "断开"

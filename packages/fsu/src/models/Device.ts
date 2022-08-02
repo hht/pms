@@ -1,5 +1,5 @@
 import { InterByteTimeoutParser, SerialPort } from "serialport";
-import _, { reject } from "lodash";
+import _ from "lodash";
 import { attempt, wait } from "../utils";
 import fs from "fs";
 import path from "path";
@@ -50,6 +50,7 @@ export class IDevice {
             port
               .pipe(new InterByteTimeoutParser({ interval: 100 }))
               .on("data", (data: Buffer) => {
+                console.log("串口返回",JSON.stringify(data))
                 useSerialPortStore.getState().update(this.instance.port, {
                   buffer: Buffer.concat([
                     useSerialPortStore.getState().ports[this.instance.port]
@@ -103,15 +104,15 @@ export class IDevice {
    * @returns
    */
   protected awaitPort = async (start: number): Promise<boolean> => {
-    if (dayjs().unix() - start > 60) {
-      return Promise.reject(false);
+    console.log("等待串口可用",this.instance.name,useSerialPortStore.getState().ports[this.instance.port]?.busy)
+    
+    while ((dayjs().unix() - start) < 60 && useSerialPortStore.getState().ports[this.instance.port]?.busy) {
+      await wait(1000)
     }
-    if (useSerialPortStore.getState().ports[this.instance.port]?.busy) {
-      await wait(1000);
-      return this.awaitPort(start);
-    } else {
-      return Promise.resolve(true);
+    if((dayjs().unix() - start) >= 60){
+      return false
     }
+    return true
   };
 
   /**
@@ -140,27 +141,22 @@ export class IDevice {
         // 如果数据校验不通过则报错
         if (_.isError(response) || _.isNull(response)) {
           reject(response);
+        }else{
+          resolve(
+            (response as unknown as Signal[]).map(it=>({...it,command})))
+          
         }
-        resolve(
-          _.chain(response as unknown as Signal[])
-            .groupBy("code")
-            .mapValues((values) =>
-              _.orderBy(values, ["name"]).map((value, index) => ({
-                ...value,
-                index: value.index || index + 1,
-                id: `${this.instance.code}-${this.instance.serial}-${
-                  value.length === 1 ? 3 : 1
-                }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`,
-                command: command,
-              }))
-            )
-            .values()
-            .flatten()
-            .orderBy("name")
-            .value()
-        );
       }, this.instance.timeout);
       // 发送命令
+      console.log("发送命令",this.instance.name, command,JSON.stringify(this.assembleCommand(
+        Buffer.from(
+          (
+            this.configuration["命令列表"] as {
+              [key: string]: string | number[];
+            }
+          )[command]
+        ))
+      ))
       useSerialPortStore.getState().ports[this.instance.port]?.port.write(
         this.assembleCommand(
           Buffer.from(
@@ -195,9 +191,6 @@ export class IDevice {
    * @returns
    */
   public getDeviceValues = async (input?: string[]) => {
-    if (this.status !== "工作正常") {
-      return;
-    }
     await this.getCurrentState();
     const signals = _.keyBy(this.instance.signals, "id");
     const values: Signal[] = [];
@@ -245,6 +238,7 @@ export class IDevice {
           this.getDeviceValue(command)
         )) as Signal[];
         if (_.isError(v)) {
+          console.log("数据错误",v)
           throw v;
         }
         for (const value of v) {
@@ -283,16 +277,31 @@ export class IDevice {
       busy: false,
     });
 
+    const recieved = _.chain(values).groupBy("code")
+    .mapValues((values) =>
+      _.orderBy(values, ["name"]).map((value, index) => ({
+        ...value,
+        index: value.index || index + 1,
+        id: `${this.instance.code}-${this.instance.serial}-${
+          value.length === 1 ? 3 : 1
+        }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`,
+      }))
+    )
+    .values()
+    .flatten()
+    .orderBy("name")
+    .value()
+
     SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
       device: this.instance.name,
       deviceId: this.instance.id,
       status: this.status,
-      values,
+      values:recieved,
       errors,
     });
-    this.updateDeviceValues(values);
+    this.updateDeviceValues(recieved);
 
-    return { values, errors };
+    return { values:recieved, errors };
   };
   /**
    * 返回模拟数据

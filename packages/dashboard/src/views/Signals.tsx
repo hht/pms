@@ -55,15 +55,17 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     errors: [],
   });
 
-  const {
-    run: getConfig,
-    loading,
-    data,
-  } = useRequest<{
+  const { run: getConfig, loading } = useRequest<{
     values: Signal[];
     errors: { name: string; error: string }[];
   }>(
     (commands: string[]) => {
+      console.log({
+        commands: _.keys(device!.commands).filter((it) =>
+          commands.includes(it)
+        ),
+        device: device!.id!,
+      });
       return request("/config", {
         commands: _.keys(device!.commands).filter((it) =>
           commands.includes(it)
@@ -344,7 +346,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
         type="warning"
         showIcon
       />
-      {store.errors.length ? (
+      {store.errors?.length ? (
         <>
           <Card style={{ marginTop: 20 }}>
             {store.errors.map((error, index) => (
