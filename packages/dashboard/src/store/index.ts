@@ -8,6 +8,7 @@ interface PmsStore {
   unit: Unit | null;
   protocols: string[];
   ports: Port[];
+  isDebug: boolean;
   timestamp: number;
 }
 
@@ -39,6 +40,7 @@ export const useStore = create<PmsStore>((set) => ({
   unit: null,
   protocols: [],
   ports: [],
+  isDebug: false,
   timestamp: new Date().getTime(),
 }));
 
@@ -70,6 +72,7 @@ export const useSystem = () => {
         unit: Unit;
         ports: Port[];
         protocols: string[];
+        isDebug: boolean;
       }>("/system"),
     {
       refreshDeps: [timestamp],

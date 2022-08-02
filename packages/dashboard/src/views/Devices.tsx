@@ -1,4 +1,4 @@
-import { Button, Card, Drawer, message, Modal } from "antd";
+import { Button, Card, Drawer, message, Modal, Switch } from "antd";
 import _ from "lodash";
 import { FC, Fragment, useRef } from "react";
 
@@ -36,7 +36,7 @@ const upsertDevice = (values: Device) =>
   });
 
 const Devices: FC = () => {
-  const { ports, protocols } = useStore((state) => state);
+  const { ports, protocols, isDebug } = useStore((state) => state);
   const actionRef = useRef<ActionType>();
   const values = useReactive<{ current?: Partial<Device> }>({
     current: undefined,
@@ -319,6 +319,16 @@ const Devices: FC = () => {
       },
     },
   ];
+  const { run: toggleMode, loading } = useRequest(
+    () => request("/debug", { isDebug: !useStore.getState().isDebug }),
+    {
+      manual: true,
+      onSuccess: ({ isDebug }: any) => {
+        useStore.setState({ isDebug });
+        message.success(isDebug ? "调试模式已打开" : "调试模式已关闭");
+      },
+    }
+  );
 
   return (
     <>
@@ -336,6 +346,15 @@ const Devices: FC = () => {
           search={false}
           style={{ marginTop: 24 }}
           toolBarRender={() => [
+            <Button
+              key="button"
+              danger={isDebug}
+              type="primary"
+              loading={loading}
+              onClick={toggleMode}
+            >
+              {!isDebug ? "采集模式" : "配置模式"}
+            </Button>,
             <BetaSchemaForm
               formRef={formRef}
               style={{ width: 200 }}

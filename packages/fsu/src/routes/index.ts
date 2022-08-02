@@ -30,15 +30,17 @@ export const getDeviceRoutes = (app: Express) => {
         unit,
         ports,
         protocols,
+        isDebug: SETTINGS.isDebug,
       });
     })
   );
   app.post(
     "/debug",
     ExpressAsyncNext(async (req, res) => {
-      const {isDebug} = req.body
-      SETTINGS.isDebug=isDebug
-      res.json({isDebug});
+      const { isDebug } = req.body;
+      SETTINGS.isDebug = isDebug;
+      await scheduleCron();
+      res.json({ isDebug });
     })
   );
 
@@ -46,7 +48,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/unit",
     ExpressAsyncNext(async (req, res) => {
       const unit = await upsertUnit(req.body);
-      await scheduleCron();
+      scheduleCron();
       res.json(unit);
     })
   );
@@ -66,7 +68,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/device",
     ExpressAsyncNext(async (req, res) => {
       const devices = await upsertDevice(req.body);
-      await scheduleCron();
+      scheduleCron();
       res.json(devices);
     })
   );
@@ -76,7 +78,7 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const { id } = req.params;
       const devices = await deleteDevice(parseInt(id));
-      await scheduleCron();
+      scheduleCron();
       res.json(devices);
     })
   );
@@ -105,7 +107,7 @@ export const getDeviceRoutes = (app: Express) => {
       }
       if (values) {
         await saveSignals(device, values);
-        await scheduleCron();
+        scheduleCron();
         res.json({ code: true, msg: "保存成功" });
       }
     })
@@ -134,7 +136,14 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({ total, data: alarms ?? {} });
     })
   );
-
+  app.post(
+    "/alarm",
+    ExpressAsyncNext(async (req, res) => {
+      await prisma.alarm.deleteMany();
+      await prisma.history.deleteMany();
+      res.json({});
+    })
+  );
   app.post(
     "/logs",
     ExpressAsyncNext(async (req, res) => {
@@ -158,6 +167,7 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({});
     })
   );
+
   app.post(
     "/ftp",
     ExpressAsyncNext(async (req, res) => {

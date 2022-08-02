@@ -9,16 +9,27 @@ import {
 import { useStore } from "../store";
 import { request } from "../hooks/useRequest";
 import dayjs from "dayjs";
-
-const upsertUnit = async (values: Partial<Unit> | null) =>
-  request("/unit", values).then(() => {
-    useStore.setState({ timestamp: new Date().getTime() });
-    message.success("局站信息修改成功");
-  });
+import { useRequest } from "ahooks";
 
 const Widget: FC = () => {
   const { unit } = useStore((state) => state);
-
+  const { run: upsertUnit, loading } = useRequest(
+    (values: Partial<Unit> | null) => request("/unit", values),
+    {
+      manual: true,
+      onSuccess: () => {
+        useStore.setState({ timestamp: new Date().getTime() });
+        message.success("局站信息修改成功");
+      },
+    }
+  );
+  const { run: boot, loading: booting } = useRequest(() => request("/boot"), {
+    manual: true,
+    onSuccess: () => {
+      useStore.setState({ timestamp: new Date().getTime() });
+      message.success("系统已重启采集");
+    },
+  });
   const formRef = useRef<ProFormInstance>();
 
   const proColumns: ProFormColumnsType<Unit>[] = [
@@ -68,8 +79,7 @@ const Widget: FC = () => {
         {
           title: "采样间隔(秒)",
           width: "s",
-          tooltip:
-            "采样间隔取决于设备数量，最低60秒，如设备比较多，可以适当增加此数值",
+          tooltip: "采样间隔为两轮采样之间的时间间隔，单位为秒",
           dataIndex: "interval",
           valueType: "digit",
           fieldProps: {
@@ -157,9 +167,11 @@ const Widget: FC = () => {
           <Button
             htmlType="button"
             danger
+            loading={booting}
             key="reset"
             onClick={() => {
-              upsertUnit(unit);
+              message.info("系统将在本采样周期结束后重启采集,请稍后...");
+              boot();
             }}
           >
             重启采集

@@ -1,13 +1,14 @@
-import { Card, Tag } from "antd";
+import { Button, Card, message, Modal, Tag } from "antd";
 import _ from "lodash";
 import { FC, useRef } from "react";
 
 import ProTable, { ActionType } from "@ant-design/pro-table";
 
-import { request } from "../hooks/useRequest";
+import { request, useRequest } from "../hooks/useRequest";
 
 import type { ProColumns } from "@ant-design/pro-table";
 import dayjs from "dayjs";
+import { DeleteOutlined, InfoCircleOutlined } from "@ant-design/icons";
 
 const COLORS: { [key: string]: string } = {
   已上传: "blue",
@@ -73,6 +74,13 @@ const Alarms: FC = () => {
           : "-",
     },
   ];
+  const { run: clearAlarm } = useRequest(() => request("/alarm"), {
+    manual: true,
+    onSuccess: () => {
+      message.success("采集器本地告警记录已清除");
+      actionRef.current?.reload();
+    },
+  });
   return (
     <>
       <Card>
@@ -88,6 +96,26 @@ const Alarms: FC = () => {
           pagination={{ pageSize: 10 }}
           search={false}
           style={{ marginTop: 24 }}
+          toolBarRender={() => [
+            <Button
+              key="button"
+              icon={<DeleteOutlined />}
+              danger
+              onClick={() => {
+                Modal.confirm({
+                  title: "清除告警",
+                  icon: <InfoCircleOutlined />,
+                  content:
+                    "您确认要清除所有错误日志吗？这将清除采集器中的历史告警及未上报告警",
+                  okText: "确认",
+                  cancelText: "取消",
+                  onOk: clearAlarm,
+                });
+              }}
+            >
+              清除日志
+            </Button>,
+          ]}
         />
       </Card>
     </>

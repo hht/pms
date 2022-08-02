@@ -341,7 +341,7 @@ export const encodeAlarm = (alarm: Alarm, flag?: "BEGIN" | "END") => ({
   DeviceId: alarm.deviceId,
   DeviceRId: alarm.deviceResourceId,
   AlarmTime: dayjs(alarm.occuredAt).format("YYYY-MM-DD HH:mm:ss"),
-  TriggerVal: alarm.value,
+  TriggerVal: alarm.value.replace(">", "&gt").replace("<", "&lt"),
   AlarmFlag: flag ?? "BEGIN",
   SignalId:
     alarm.signalId.substring(0, 3) +
