@@ -259,7 +259,7 @@ const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
         await sendLocalData("SEND_HISDIDATA", 305);
         await sendLocalData("SEND_HISALARM", 605);
       } catch (e) {
-        Events.emit(EVENT.DISCONNECTED, "连接服务器失败");
+        Events.emit(EVENT.DISCONNECTED, "服务器连接失败");
       }
     }
   });

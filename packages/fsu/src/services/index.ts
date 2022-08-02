@@ -9,8 +9,6 @@ import { SerialPort } from "serialport";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
-import { SoapClient } from "./soap";
-import { bootstrap } from "./opetration";
 import { wait } from "../utils";
 
 export const DEVICES: IDevice[] = [];
@@ -42,7 +40,7 @@ const closePort = (port: SerialPort) =>
 /**
  * 重置系统
  */
-const resetDevices = async () => {
+export const resetDevices = async () => {
   // 清除所有端口信息
   const ports = _.values(useSerialPortStore.getState().ports);
   for (const port of ports) {
@@ -98,13 +96,6 @@ export const scheduleJob = async () => {
   console.log("---重启服务---");
   SETTINGS.isRunning = true;
   SETTINGS.isStopped = false;
-  Events.emit(EVENT.DISCONNECTED, "重新连接服务器");
-  await SoapClient.invoke(await bootstrap()).catch((e) => {
-    Events.emit(
-      EVENT.ERROR_LOG,
-      `登录SC失败,错误信息:${e.message || e || "未知错误"}`
-    );
-  });
   // 重置设备
   await resetDevices();
   // 添加新的定时任务
@@ -125,7 +116,9 @@ export const scheduleJob = async () => {
         }
       }
     }
-    await wait((unit.interval ?? 10) * 1000);
+    if (SETTINGS.isRunning) {
+      await wait((unit.interval ?? 10) * 1000);
+    }
   }
   SETTINGS.isStopped = true;
 };

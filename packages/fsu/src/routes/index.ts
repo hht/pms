@@ -14,6 +14,8 @@ import { ExpressAsyncNext } from "../utils";
 import { getPorts } from "../services/system";
 import { DEVICES, scheduleCron, SETTINGS } from "../services";
 import { handleInvoke } from "../services/soap";
+import { Events } from "../services/rx";
+import { EVENT } from "../models/enum";
 
 /**
  * 局站相关信息接口
@@ -56,6 +58,16 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/devices",
     ExpressAsyncNext(async (req, res) => {
+      for (const device of DEVICES) {
+        device.instance = {
+          ...device.instance,
+          ...(await prisma.device.findFirst({
+            where: {
+              id: device.instance.id,
+            },
+          })),
+        };
+      }
       const devices = DEVICES.map((it) => ({
         ...it.instance,
         commands: it.configuration["命令列表"],
@@ -116,6 +128,7 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/boot",
     ExpressAsyncNext(async (req, res) => {
+      Events.emit(EVENT.DISCONNECTED, "正在连接服务器");
       await scheduleCron();
       res.json({ code: true, msg: "系统已重启" });
     })
@@ -136,6 +149,7 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({ total, data: alarms ?? {} });
     })
   );
+
   app.post(
     "/alarm",
     ExpressAsyncNext(async (req, res) => {
@@ -144,6 +158,7 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({});
     })
   );
+
   app.post(
     "/logs",
     ExpressAsyncNext(async (req, res) => {
@@ -167,7 +182,6 @@ export const getDeviceRoutes = (app: Express) => {
       res.json({});
     })
   );
-
   app.post(
     "/ftp",
     ExpressAsyncNext(async (req, res) => {

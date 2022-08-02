@@ -120,7 +120,7 @@ const Devices: FC = () => {
         ></BetaSchemaForm>,
         <Fragment key="config">
           <Button
-            disabled={record.activite}
+            disabled={!isDebug}
             onClick={() => {
               values.current = record;
             }}

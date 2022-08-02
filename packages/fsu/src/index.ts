@@ -8,11 +8,13 @@ import { ExpressErrorHandler } from "./utils";
 import { getDeviceRoutes } from "./routes";
 import { scheduleCron } from "./services";
 import { createSoapServer } from "./services/soap";
+import { Events } from "./services/rx";
+import { EVENT } from "./models/enum";
 
 export const app = express();
 
 app.use(cors());
-app.use(bodyParser.json({limit:"50mb"}));
+app.use(bodyParser.json({ limit: "50mb" }));
 
 const server = createServer(app);
 
@@ -25,5 +27,6 @@ app.use(ExpressErrorHandler);
 server.listen(8080, () => {
   console.log("PMS-X动环监控模块目前正在8080端口运行...");
   const soap = createSoapServer(app);
+  Events.emit(EVENT.DISCONNECTED, "正在连接服务器");
   scheduleCron();
 });
