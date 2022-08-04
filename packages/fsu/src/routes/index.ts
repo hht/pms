@@ -11,7 +11,7 @@ import {
   upsertFTP,
 } from "../services/orm";
 import { ExpressAsyncNext } from "../utils";
-import { getPorts } from "../services/system";
+import { changeFtpUser, getPorts } from "../services/system";
 import { DEVICES, scheduleCron, SETTINGS } from "../services";
 import { handleInvoke } from "../services/soap";
 import { Events } from "../services/rx";
@@ -193,6 +193,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/ftp",
     ExpressAsyncNext(async (req, res) => {
       const { id, userName, password } = req.body;
+      await changeFtpUser(userName, password);
       await upsertFTP({ id, userName, password });
       res.json({ message: "FTP用户保存成功" });
     })
