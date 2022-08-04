@@ -1,15 +1,14 @@
 import { DeviceError } from "../utils/errors";
 import _ from "lodash";
 import { IDevice } from "./Device";
-import { SIGNAL_CODE } from "./enum";
 import { appendCrc16, checkCrc16 } from "../algorithm/CRC";
 
 /**
  * 通用故障
  */
 const COMMON_STATE: { [key: number]: string } = {
-  0x00: "正常",
-  0x01: "故障",
+  0x01: "正常",
+  0x00: "故障",
 };
 
 class Environment extends IDevice {
@@ -49,27 +48,38 @@ class Environment extends IDevice {
     }
   };
   /**
-   * 温湿度模拟量
+   * 获取环境数据
    */
   private parse = () => {
     const data = this.getPayload();
     const values: number[] = [];
+    let offset = 0;
     const length = data.readInt8(2);
-    for (let i = 0; i < 20; i += 2) {
-      values.push(data.readInt16BE(i + 3) / 100);
+    offset += 3;
+    const address = data.readUInt16BE(offset);
+    values.push(address);
+    offset += 2;
+    for (let i = 0; i < 18; i += 1) {
+      values.push(data.readUInt16BE(offset) / 100);
+      offset += 2;
     }
-
-    return (this.configuration["环境量"] as Signal[]).map((it, index) => ({
-      ...it,
-      code: SIGNAL_CODE[it.name],
-      raw: values[index],
-      value: `${values[index]}${it.unit}`,
-      threshold: 0,
-      thresholdPercent: 0,
-      startDelay: 0,
-      endDelay: 0,
-      offset: index * 2,
-    }));
+    let switches = data.readUInt16BE(offset);
+    for (let i = 0; i < 16; i++) {
+      values.push(switches & 1);
+      switches = switches >> 1;
+    }
+    return (this.configuration["协议数据"] as Signal[])
+      .map((it, index) => ({
+        ...it,
+        raw: values[index],
+        value: `${values[index]}${it.unit}`,
+        threshold: 0,
+        thresholdPercent: 0,
+        startDelay: 0,
+        endDelay: 0,
+        offset: index * 2,
+      }))
+      .filter((it) => it.name !== "协议保留");
   };
 }
 

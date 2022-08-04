@@ -129,6 +129,13 @@ export const getDeviceRoutes = (app: Express) => {
     "/boot",
     ExpressAsyncNext(async (req, res) => {
       Events.emit(EVENT.DISCONNECTED, "正在连接服务器");
+      await prisma.alarm.deleteMany();
+      await prisma.history.deleteMany();
+      await prisma.signal.updateMany({
+        data: {
+          alarm: null,
+        },
+      });
       await scheduleCron();
       res.json({ code: true, msg: "系统已重启" });
     })

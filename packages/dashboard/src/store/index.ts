@@ -1,5 +1,4 @@
 import create from "zustand";
-import _ from "lodash";
 import { request, useRequest } from "../hooks/useRequest";
 import shallow from "zustand/shallow";
 import produce from "immer";
@@ -49,7 +48,15 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   update: (device) =>
     set(
       produce((state: DashboardStore) => {
-        state.devices = { ...state.devices, [device.deviceId]: device };
+        state.devices = {
+          ...state.devices,
+          [device.deviceId]: {
+            ...device,
+            values: device.values.sort((a, b) => {
+              return (a.offset ?? 0) < (b.offset ?? 0) ? -1 : 1;
+            }),
+          },
+        };
       })
     ),
 }));

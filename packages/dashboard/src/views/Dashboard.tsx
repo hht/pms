@@ -4,10 +4,6 @@ import { FC } from "react";
 import { useDashboardStore } from "../store";
 import shallow from "zustand/shallow";
 
-const getModelList = () => {
-  return ["PSM-A"];
-};
-
 const getColor = (data: Signal) => {
   // 信号量并且有正常值
   if (data.length === 1) {

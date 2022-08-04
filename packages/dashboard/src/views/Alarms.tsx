@@ -1,5 +1,4 @@
 import { Button, Card, message, Modal, Tag } from "antd";
-import _ from "lodash";
 import { FC, useRef } from "react";
 
 import ProTable, { ActionType } from "@ant-design/pro-table";

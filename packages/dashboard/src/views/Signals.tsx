@@ -60,12 +60,6 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     errors: { name: string; error: string }[];
   }>(
     (commands: string[]) => {
-      console.log({
-        commands: _.keys(device!.commands).filter((it) =>
-          commands.includes(it)
-        ),
-        device: device!.id!,
-      });
       return request("/config", {
         commands: _.keys(device!.commands).filter((it) =>
           commands.includes(it)
@@ -76,7 +70,9 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     {
       manual: true,
       onSuccess: ({ values, errors }) => {
-        store.values = values;
+        store.values = values.sort((a, b) => {
+          return (a.offset ?? 0) < (b.offset ?? 0) ? -1 : 1;
+        });
         store.errors = errors;
       },
     }
@@ -141,6 +137,12 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     {
       title: "采样点顺序号",
       dataIndex: "index",
+      valueType: "digit",
+      editable: device?.controller === "环境监测" ? undefined : false,
+    },
+    {
+      title: "采样点正常值(信号量)",
+      dataIndex: "normalValue",
       valueType: "digit",
       editable: device?.controller === "环境监测" ? undefined : false,
     },

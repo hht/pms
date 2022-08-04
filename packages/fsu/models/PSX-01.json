@@ -2,96 +2,328 @@
   "命令列表": {
     "环境量": [3, 0, 0, 0, 32]
   },
-  "环境量": [
+  "协议数据": [
     {
-      "name": "模拟量",
+      "name": "设备地址",
       "unit": "",
       "length": 2,
-      "lowerMinorLimit": 30,
-      "lowerMajorLimit": 20,
-      "upperMinorLimit": 60,
-      "upperMajorLimit": 70
+      "code": "Z00"
     },
     {
-      "name": "模拟量",
-      "unit": "",
+      "name": "1路A相电压",
+      "unit": "V",
       "length": 2,
+      "code": "101",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "1路B相电压",
+      "unit": "V",
+      "length": 2,
+      "code": "102",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "1路C相电压",
+      "unit": "V",
+      "length": 2,
+      "code": "103",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "2路A相电压",
+      "unit": "V",
+      "length": 2,
+      "code": "101",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "2路B相电压",
+      "unit": "V",
+      "length": 2,
+      "code": "102",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "2路C相电压",
+      "unit": "V",
+      "length": 2,
+      "code": "103",
+      "lowerMinorLimit": 200,
+      "lowerMajorLimit": 180,
+      "upperMinorLimit": 240,
+      "upperMajorLimit": 250
+    },
+    {
+      "name": "直流电压",
+      "unit": "V",
+      "length": 2,
+      "code": "110",
+      "lowerMinorLimit": 50,
+      "lowerMajorLimit": 48,
+      "upperMinorLimit": 54,
+      "upperMajorLimit": 56
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "X01",
+      "length": 2
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "X02",
+      "length": 2
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "X03",
+      "length": 2
+    },
+    {
+      "name": "温度",
+      "unit": "℃",
+      "length": 2,
+      "code": "430",
       "lowerMinorLimit": 20,
       "lowerMajorLimit": 10,
       "upperMinorLimit": 28,
       "upperMajorLimit": 30
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y01",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y02",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y03",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y04",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y05",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y06",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "协议保留",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Y07",
+      "length": 2
     },
     {
-      "name": "模拟量",
+      "name": "自定义开关量#1",
       "unit": "",
-      "length": 2,
-      "lowerMinorLimit": 20,
-      "lowerMajorLimit": 10,
-      "upperMinorLimit": 28,
-      "upperMajorLimit": 30
+      "code": "Z01",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#2",
+      "unit": "",
+      "code": "Z02",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#3",
+      "unit": "",
+      "code": "Z03",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#4",
+      "unit": "",
+      "code": "Z04",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#5",
+      "unit": "",
+      "code": "Z05",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#6",
+      "unit": "",
+      "code": "Z06",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "自定义开关量#7",
+      "unit": "",
+      "code": "Z07",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z08",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z09",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z10",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z11",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z12",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z13",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z14",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z15",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
+    },
+    {
+      "name": "协议保留",
+      "unit": "",
+      "code": "Z16",
+      "normalValue": 1,
+      "enum": {
+        "1": "正常",
+        "0": "故障"
+      },
+      "length": 1
     }
   ]
 }

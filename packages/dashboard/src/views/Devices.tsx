@@ -1,4 +1,4 @@
-import { Button, Card, Drawer, message, Modal, Switch } from "antd";
+import { Button, Card, Drawer, message, Modal, Tag } from "antd";
 import _ from "lodash";
 import { FC, Fragment, useRef } from "react";
 
@@ -78,6 +78,23 @@ const Devices: FC = () => {
     {
       title: "生产厂家",
       dataIndex: "manufacturer",
+      hideInTable: true,
+    },
+    {
+      title: "当前监控点数量",
+      dataIndex: "signals",
+      hideInForm: true,
+      align: "center",
+      render: (_, record) => {
+        return (
+          <Tag
+            style={{ width: "50%", textAlign: "center" }}
+            color={record.signals?.length === 0 ? "orange" : "green"}
+          >
+            {record.signals?.length}
+          </Tag>
+        );
+      },
     },
     {
       title: "产品型号",
@@ -340,7 +357,14 @@ const Devices: FC = () => {
           columns={columns}
           request={async (params) => {
             const data = await request<Device[]>("/devices");
-            return { data };
+            return {
+              data: data.map((it) => ({
+                ...it,
+                signals: it.signals.sort((a, b) => {
+                  return (a.offset ?? 0) < (b.offset ?? 0) ? -1 : 1;
+                }),
+              })),
+            };
           }}
           actionRef={actionRef}
           search={false}

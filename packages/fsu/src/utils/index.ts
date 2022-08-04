@@ -325,7 +325,7 @@ export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
   }
   // 信号量并且有正常值
   if (data.length === 1) {
-    return value === data.normalValue ? "00" : "01";
+    return value === (data.normalValue ?? 0) ? "00" : "01";
   }
   if (data.upperMajorLimit && value > data.upperMajorLimit) {
     return "04";

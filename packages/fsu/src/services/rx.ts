@@ -89,7 +89,7 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
     // 如果是信号量且有正常值且值发生变化
     if (
       recieved.length === 1 &&
-      recieved.normalValue &&
+      _.isNumber(recieved.normalValue) &&
       (recieved.prev !== recieved.raw ||
         (currentState !== "00" && !recieved.alarm) ||
         (currentState === "00" && recieved.alarm))

@@ -1,6 +1,5 @@
-import { Alert, Button, Card, Descriptions, message } from "antd";
+import { Alert, Button, Card, Descriptions, message, Modal } from "antd";
 import { FC, useRef } from "react";
-
 import {
   BetaSchemaForm,
   ProFormColumnsType,
@@ -13,7 +12,7 @@ import { useRequest } from "ahooks";
 
 const Widget: FC = () => {
   const { unit } = useStore((state) => state);
-  const { run: upsertUnit, loading } = useRequest(
+  const { run: upsertUnit } = useRequest(
     (values: Partial<Unit> | null) => request("/unit", values),
     {
       manual: true,
@@ -27,7 +26,7 @@ const Widget: FC = () => {
     manual: true,
     onSuccess: () => {
       useStore.setState({ timestamp: new Date().getTime() });
-      message.success("系统已重启采集");
+      message.success("系统已重置");
     },
   });
   const formRef = useRef<ProFormInstance>();
@@ -170,11 +169,17 @@ const Widget: FC = () => {
             loading={booting}
             key="reset"
             onClick={() => {
-              message.info("系统将在本采样周期结束后重启采集,请稍后...");
-              boot();
+              Modal.confirm({
+                title: "确认重置",
+                content:
+                  "您确认要重置采集器吗？重置后所有的本地告警信息将被清除，如确认，系统将在本采样周期结束后执行重置操作",
+                onOk: async () => {
+                  boot();
+                },
+              });
             }}
           >
-            重启采集
+            重置系统
           </Button>,
         ]}
         title="设备信息"

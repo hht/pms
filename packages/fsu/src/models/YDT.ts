@@ -114,10 +114,10 @@ class YDT extends IDevice {
    */
   protected assembleCommand = (input: Buffer) => {
     // 设置局码
-    const address = _.padStart(`${this.instance.address}`,2,'0')
-    address.split('').forEach((it,index)=>{
-      input.writeInt8(address.charCodeAt(index),2+index)
-    })
+    const address = _.padStart(`${this.instance.address}`, 2, "0");
+    address.split("").forEach((it, index) => {
+      input.writeInt8(address.charCodeAt(index), 2 + index);
+    });
     const [checksum] = this.getLengthChecksum(input, 8);
     input.write(`${checksum.toString(16).toUpperCase()}`, 8);
     const sum = [...input.valueOf()].reduce((prev, curr) => prev + curr, 0);
@@ -260,7 +260,7 @@ class YDT extends IDevice {
         const customCount = data.readUInt8(offset);
         offset += 1;
         const customPoints = (this.configuration["自定义交流屏模拟量"] ??
-          []) as Omit<Signal,"code">[];
+          []) as Omit<Signal, "code">[];
         for (let c = 0; c < customCount; c++) {
           if (customPoints[c]) {
             const value = data.readUInt8(offset);
@@ -288,7 +288,7 @@ class YDT extends IDevice {
           ...ALTERNATING_CURRENT,
           name: "输出电流C",
         },
-      ] as Omit<Signal,"code">[]) {
+      ] as Omit<Signal, "code">[]) {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
@@ -318,7 +318,6 @@ class YDT extends IDevice {
           {
             name: "空开状态",
             length: 1,
-            normalValue: 0x00,
             enum: {
               0x00: "闭合",
               0x01: "断开",
@@ -339,7 +338,7 @@ class YDT extends IDevice {
       const customCount = data.readUInt8(offset);
       offset += 1;
       const customPoints = (this.configuration["自定义交流屏状态量"] ??
-        []) as Omit<Signal,"code">[];
+        []) as Omit<Signal, "code">[];
       for (let c = 0; c < customCount; c++) {
         if (customPoints[c]) {
           const value = data.readUInt8(offset);
@@ -455,7 +454,7 @@ class YDT extends IDevice {
         const customCount = data.readUInt8(offset);
         offset += 1;
         const customPoints = (this.configuration["自定义交流屏告警量"] ??
-          []) as Omit<Signal,"code">[];
+          []) as Omit<Signal, "code">[];
         for (let c = 0; c < customCount; c++) {
           if (customPoints[c]) {
             const value = data.readUInt8(offset);
@@ -562,7 +561,7 @@ class YDT extends IDevice {
       const customCount = data.readInt8(offset);
       offset += 1;
       const customPoints = (this.configuration["自定义整流模块模拟量"] ??
-        []) as Omit<Signal,"code">[];
+        []) as Omit<Signal, "code">[];
       for (let c = 0; c < customCount; c++) {
         if (customPoints[c]) {
           const value = data.readFloatLE(offset);
@@ -620,7 +619,7 @@ class YDT extends IDevice {
       const customCount = data.readInt8(offset);
       offset += 1;
       const customPoints = (this.configuration["自定义整流模块状态量"] ??
-        []) as Omit<Signal,"code">[];
+        []) as Omit<Signal, "code">[];
       for (let c = 0; c < customCount; c++) {
         if (customPoints[c]) {
           const value = data.readUInt8(offset);
@@ -669,7 +668,7 @@ class YDT extends IDevice {
       const customCount = data.readUInt8(offset);
       offset += 1;
       const customPoints = (this.configuration["自定义整流模块告警量"] ??
-        []) as Omit<Signal,"code">[];
+        []) as Omit<Signal, "code">[];
       for (let c = 0; c < customCount; c++) {
         if (customPoints[c]) {
           const value = data.readUInt8(offset);
@@ -751,7 +750,7 @@ class YDT extends IDevice {
         if (item === "直流屏电池组数据") {
           for (let j = 0; j < groupCount; j++) {
             for (const [index, signal] of (
-              this.configuration["直流屏电池组数据"] as Omit<Signal,"code">[]
+              this.configuration["直流屏电池组数据"] as Omit<Signal, "code">[]
             ).entries()) {
               if (currentCustomCount >= customCount) {
                 break;
@@ -769,7 +768,10 @@ class YDT extends IDevice {
           }
         }
         if (item === "自定义直流屏模拟量") {
-          const entries = this.configuration["自定义直流屏模拟量"] as Omit<Signal,"code">[];
+          const entries = this.configuration["自定义直流屏模拟量"] as Omit<
+            Signal,
+            "code"
+          >[];
           for (const [index, signal] of entries.entries()) {
             if (currentCustomCount >= customCount) {
               break;
@@ -849,7 +851,7 @@ class YDT extends IDevice {
       const customCount = data.readUInt8(offset);
       offset += 1;
       const customPoints = (this.configuration["自定义直流屏告警量"] ??
-        []) as Omit<Signal,"code">[];
+        []) as Omit<Signal, "code">[];
       for (let c = 0; c < customCount; c++) {
         if (customPoints[c]) {
           const value = data.readUInt8(offset);

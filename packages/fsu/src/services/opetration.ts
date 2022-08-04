@@ -35,8 +35,8 @@ const getValues = (data: Signal[]) => {
           attributes: {
             Id: it.signalId,
             RecordTime: dayjs(it.updatedAt).format("YYYY-MM-DD HH:mm:ss"),
+            Value: it.value,
           },
-          value: it.value,
         })),
       };
     });
