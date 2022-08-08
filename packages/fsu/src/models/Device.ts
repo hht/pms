@@ -50,7 +50,7 @@ export class IDevice {
             port
               .pipe(new InterByteTimeoutParser({ interval: 100 }))
               .on("data", (data: Buffer) => {
-                console.log("串口返回", JSON.stringify(data));
+                // console.log("串口返回", JSON.stringify(data));
                 useSerialPortStore.getState().update(this.instance.port, {
                   buffer: Buffer.concat([
                     useSerialPortStore.getState().ports[this.instance.port]
@@ -149,22 +149,22 @@ export class IDevice {
         }
       }, this.instance.timeout);
       // 发送命令
-      console.log(
-        "发送命令",
-        this.instance.name,
-        command,
-        JSON.stringify(
-          this.assembleCommand(
-            Buffer.from(
-              (
-                this.configuration["命令列表"] as {
-                  [key: string]: string | number[];
-                }
-              )[command]
-            )
-          )
-        )
-      );
+      // console.log(
+      //   "发送命令",
+      //   this.instance.name,
+      //   command,
+      //   JSON.stringify(
+      //     this.assembleCommand(
+      //       Buffer.from(
+      //         (
+      //           this.configuration["命令列表"] as {
+      //             [key: string]: string | number[];
+      //           }
+      //         )[command]
+      //       )
+      //     )
+      //   )
+      // );
       useSerialPortStore.getState().ports[this.instance.port]?.port.write(
         this.assembleCommand(
           Buffer.from(
@@ -283,6 +283,9 @@ export class IDevice {
     useSerialPortStore.getState().update(this.instance.port, {
       busy: false,
     });
+    if (errors.length === 0) {
+      this.setStatus("工作正常");
+    }
 
     const recieved = _.chain(values)
       .groupBy("code")
@@ -334,7 +337,7 @@ export class IDevice {
           .filter((it) => !!it.code)
           .groupBy("code")
           .mapValues((values) =>
-            _.orderBy(values, ["name", "offset"]).map((value, index) => ({
+            _.orderBy(values, ["command", "offset"]).map((value, index) => ({
               ...value,
               index,
               id: `${this.instance.code}-${this.instance.serial}-${
@@ -345,7 +348,6 @@ export class IDevice {
           )
           .values()
           .flatten()
-          .orderBy("name")
           .value() ?? [];
       return values;
     } catch (e: any) {

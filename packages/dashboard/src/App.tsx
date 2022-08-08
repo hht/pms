@@ -22,7 +22,7 @@ const App: FC = () => {
   const { message, socket, readyState } = useWebsocket(baseURL);
   return (
     <Layout>
-      <Header style={{ position: "fixed", zIndex: 1, width: "100%" }}>
+      <Header style={{ position: "fixed", zIndex: 999, width: "100%" }}>
         <div className="logo">动环采集器 PMS-X</div>
         <Menu
           theme="dark"

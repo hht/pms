@@ -1,13 +1,16 @@
-import { Alert, Card, Result, Skeleton, Statistic, Tag } from "antd";
+import { Alert, Card, Result, Skeleton, Tag } from "antd";
 import _ from "lodash";
 import { FC } from "react";
 import { useDashboardStore } from "../store";
 import shallow from "zustand/shallow";
+import ProTable, { ProColumns } from "@ant-design/pro-table";
 
-const getColor = (data: Signal) => {
+const getColor = (data: Partial<Signal>) => {
   // 信号量并且有正常值
   if (data.length === 1) {
-    return data.raw === (data.normalValue ?? 0) ? "#388E3C" : "#E64A19";
+    return _.isNumber(data.normalValue) && data.raw !== data.normalValue
+      ? "#E64A19"
+      : "#388E3C";
   }
   if (data.upperMajorLimit && data.raw! > data.upperMajorLimit) {
     return "#E64A19";
@@ -24,6 +27,101 @@ const getColor = (data: Signal) => {
   return "#388E3C";
 };
 
+const columns: ProColumns<Partial<Signal>>[] = [
+  {
+    title: "#",
+    align: "center",
+    valueType: "indexBorder",
+    editable: false,
+    width: 60,
+    fixed: "left",
+  },
+  {
+    title: "监控点名称",
+    dataIndex: "name",
+    fixed: "left",
+    render: (text, record) => {
+      return <span style={{ fontWeight: "bold" }}>{text}</span>;
+    },
+  },
+  {
+    title: "监控点实时数据",
+    dataIndex: "value",
+    fixed: "left",
+    render: (text, record) => {
+      return (
+        <span style={{ color: getColor(record), fontWeight: "bold" }}>
+          {text}
+        </span>
+      );
+    },
+  },
+  {
+    title: "命令",
+    dataIndex: "command",
+    editable: false,
+  },
+  {
+    title: "采样点顺序号",
+    dataIndex: "index",
+    valueType: "digit",
+  },
+  {
+    title: "采样点正常值(信号量)",
+    dataIndex: "normalValue",
+    valueType: "digit",
+  },
+  {
+    title: "单位",
+    dataIndex: "unit",
+  },
+
+  {
+    title: "过低阈值",
+    dataIndex: "lowerMajorLimit",
+    valueType: "digit",
+  },
+  {
+    title: "较低阈值",
+    dataIndex: "lowerMinorLimit",
+    valueType: "digit",
+  },
+
+  {
+    title: "较高阈值",
+    dataIndex: "upperMinorLimit",
+    valueType: "digit",
+  },
+  {
+    title: "过高阈值",
+    dataIndex: "upperMajorLimit",
+    valueType: "digit",
+  },
+  {
+    title: "变化阈值",
+    dataIndex: "threshold",
+    valueType: "digit",
+  },
+  {
+    title: "变化阈值百分比",
+    dataIndex: "thresholdPercent",
+    valueType: "digit",
+    fieldProps: {
+      addonAfter: "%",
+    },
+  },
+  {
+    title: "告警开始延迟(秒)",
+    dataIndex: "startDelay",
+    valueType: "digit",
+  },
+  {
+    title: "告警结束延迟(秒)",
+    dataIndex: "endDelay",
+    valueType: "digit",
+  },
+];
+
 const Dashboard: FC = () => {
   const devices = useDashboardStore((state) => state.devices, shallow);
   if (_.keys(devices).length === 0) {
@@ -37,6 +135,7 @@ const Dashboard: FC = () => {
       </Card>
     );
   }
+  console.log(devices);
   return (
     <>
       {_.values(devices).map((device) => (
@@ -46,7 +145,9 @@ const Dashboard: FC = () => {
           title={device.device}
           extra={
             <div>
-              <Tag>{device.status}</Tag>
+              <Tag color={device.status === "工作正常" ? "success" : "warning"}>
+                {device.status}
+              </Tag>
             </div>
           }
         >
@@ -60,20 +161,16 @@ const Dashboard: FC = () => {
                 ></Alert>
               ))
             : null}
-          {device.values.map((value) => (
-            <Card.Grid
-              hoverable={false}
-              key={value.id}
-              style={{ width: "25%", textAlign: "center", cursor: "pointer" }}
-            >
-              <Statistic
-                title={value.name}
-                value={value.value}
-                precision={2}
-                valueStyle={{ color: getColor(value) }}
-              />
-            </Card.Grid>
-          ))}
+          <ProTable<Partial<Signal>>
+            rowKey="id"
+            bordered
+            columns={columns}
+            dataSource={device.values}
+            search={false}
+            scroll={{ x: 2200 }}
+            style={{ margin: -24, marginTop: 0 }}
+            options={false}
+          />
         </Card>
       ))}
     </>

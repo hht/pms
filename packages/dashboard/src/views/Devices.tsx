@@ -387,7 +387,6 @@ const Devices: FC = () => {
               layoutType="DrawerForm"
               onFinish={async (values) => {
                 await upsertDevice(values);
-                console.log(actionRef.current);
                 actionRef.current?.reload();
                 return true;
               }}

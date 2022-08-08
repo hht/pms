@@ -30,7 +30,7 @@ const renderEmpty = () => (
   />
 );
 
-const SIGNAL_ENUM = {
+export const SIGNAL_ENUM = {
   "430": "温度",
   "605": "烟感",
   "606": "水浸",

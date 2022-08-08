@@ -367,7 +367,7 @@ const Widget: FC = () => {
       >
         <Alert
           type="warning"
-          description="更新网卡设置可能导致网络中断，如发生此类情况，请重新连接"
+          description="更新网卡设置会导致网络中断以及采集进程重启，如发生网络错误等情况，请在一分钟后重试"
           style={{ marginBottom: 20 }}
           showIcon
         ></Alert>

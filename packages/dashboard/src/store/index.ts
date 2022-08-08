@@ -2,7 +2,7 @@ import create from "zustand";
 import { request, useRequest } from "../hooks/useRequest";
 import shallow from "zustand/shallow";
 import produce from "immer";
-
+import _ from "lodash";
 interface PmsStore {
   unit: Unit | null;
   protocols: string[];
@@ -52,9 +52,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
           ...state.devices,
           [device.deviceId]: {
             ...device,
-            values: device.values.sort((a, b) => {
-              return (a.offset ?? 0) < (b.offset ?? 0) ? -1 : 1;
-            }),
+            values: _.orderBy(device.values, ["command", "offset"]),
           },
         };
       })

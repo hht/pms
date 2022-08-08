@@ -23,10 +23,8 @@ export class Device {
         },
         (error: Error | null) => {
           if (error) {
-            console.log(error);
             Device.status = "串口初始化失败";
           } else {
-            console.log("串口初始化完成");
             Device.port
               ?.pipe(new InterByteTimeoutParser({ interval: 100 }))
               .on("data", (data: Buffer) => {
