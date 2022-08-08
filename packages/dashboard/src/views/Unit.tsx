@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Descriptions, message, Modal } from "antd";
+import { Alert, Button, Card, Descriptions, List, message, Modal } from "antd";
 import { FC, useRef } from "react";
 import {
   BetaSchemaForm,
@@ -9,6 +9,88 @@ import { useStore } from "../store";
 import { request } from "../hooks/useRequest";
 import dayjs from "dayjs";
 import { useRequest } from "ahooks";
+
+const data = [
+  "255.0.0.0	       8",
+  "255.128.0.0	     9",
+  "255.192.0.0	    10",
+  "255.224.0.0	    11",
+  "255.240.0.0	    12",
+  "255.248.0.0	    13",
+  "255.252.0.0	    14",
+  "255.254.0.0	    15",
+  "255.255.0.0	    16",
+  "255.255.128.0	  17",
+  "255.255.192.0	  18",
+  "255.255.224.0  	19",
+  "255.255.240.0 	  20",
+  "255.255.248.0 	  21",
+  "255.255.252.0 	  22",
+  "255.255.254.0	  23",
+  "255.255.255.0	  24",
+  "255.255.255.128	25",
+  "255.255.255.192	26",
+  "255.255.255.224	27",
+  "255.255.255.240	28",
+  "255.255.255.248	29",
+  "255.255.255.252	30",
+];
+
+const ncolumns: ProFormColumnsType<NetworkConfig>[] = [
+  {
+    valueType: "group",
+    columns: [
+      {
+        title: "IP地址",
+        width: "s",
+        dataIndex: "ip",
+        formItemProps: {
+          rules: [
+            {
+              required: true,
+              message: "此项为必填项",
+            },
+            {
+              pattern: /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$/,
+              message: "请输入正确的IP地址",
+            },
+          ],
+        },
+      },
+      {
+        title: "掩码位数",
+        width: "s",
+        valueType: "digit",
+        dataIndex: "mask",
+        formItemProps: {
+          rules: [
+            {
+              required: true,
+              message: "此项为必填项",
+            },
+          ],
+        },
+      },
+      {
+        title: "网关",
+        width: "s",
+        dataIndex: "gateway",
+        formItemProps: {
+          rules: [
+            {
+              required: true,
+              message: "此项为必填项",
+            },
+            {
+              pattern: /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$/,
+              message: "请输入正确的IP地址",
+            },
+          ],
+        },
+      },
+    ],
+  },
+];
 
 const Widget: FC = () => {
   const { unit } = useStore((state) => state);
@@ -58,6 +140,10 @@ const Widget: FC = () => {
               {
                 required: true,
                 message: "此项为必填项",
+              },
+              {
+                pattern: /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$/,
+                message: "请输入正确的IP地址",
               },
             ],
           },
@@ -228,6 +314,76 @@ const Widget: FC = () => {
               await request("/ftp", { ...values, id: unit.id });
               useStore.setState({ timestamp: new Date().getTime() });
               message.success("FTP信息更新成功");
+              return true;
+            }}
+            layoutType="Form"
+          ></BetaSchemaForm>
+        ) : null}
+      </Card>
+      <Card
+        title="采集器网络配置"
+        style={{ marginTop: 20 }}
+        extra={[
+          <Button
+            htmlType="button"
+            type="primary"
+            ghost
+            key="update"
+            style={{ marginRight: 20 }}
+            onClick={() => {
+              Modal.confirm({
+                title: "掩码对照表",
+                type: "info",
+                width: 1000,
+                content: (
+                  <List
+                    grid={{ gutter: 16, column: 4 }}
+                    dataSource={data}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <div
+                          style={{
+                            display: "flex",
+                            padding: 8,
+                            borderRadius: 4,
+                            backgroundColor: "#eee",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          {item.split(/\s+/).map((it) => (
+                            <span>{it}</span>
+                          ))}
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                ),
+              });
+            }}
+          >
+            掩码对照表
+          </Button>,
+        ]}
+      >
+        <Alert
+          type="warning"
+          description="更新网卡设置可能导致网络中断，如发生此类情况，请重新连接"
+          style={{ marginBottom: 20 }}
+          showIcon
+        ></Alert>
+        {unit ? (
+          <BetaSchemaForm<NetworkConfig>
+            formRef={formRef}
+            columns={ncolumns}
+            initialValues={{
+              ip: "192.168.0.2",
+              mask: 16,
+              gateway: "192.168.0.1",
+            }}
+            onFinish={async (values) => {
+              await request("/network", { ...values });
+              useStore.setState({ timestamp: new Date().getTime() });
+              message.success("网卡信息修改成功");
               return true;
             }}
             layoutType="Form"

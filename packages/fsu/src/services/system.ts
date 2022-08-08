@@ -8,8 +8,8 @@ import { wait } from "../utils";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import compressing from "compressing";
-import { stat, watch, unlink } from "fs";
-import dayjs from "dayjs";
+import fs, { watch, unlink } from "fs";
+import path from "path";
 
 const BASE_DIR = "/opt/node/pms";
 
@@ -102,6 +102,43 @@ export const changeFtpUser = async (username: string, password: string) => {
         );
       });
     });
+  });
+};
+
+/**
+ * 设置网卡
+ */
+export const configNetwork = async (
+  ip: string,
+  mask: number,
+  gateway: string
+) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { exec } = require("child_process");
+      await exec("nmcli con mod enp3s0 autoconnect yes");
+      await wait(200);
+      await exec(`nmcli con mod enp3s0 ipv4.address ${ip}/${mask}`);
+      await wait(200);
+      await exec(`nmcli con mod enp3s0 ipv4.gateway ${gateway}`);
+      await wait(200);
+      await exec(`nmcli c reload`);
+      await wait(200);
+      await exec(`nmcli con up enp3s0`);
+      await wait(200);
+      const template = fs.readFileSync(
+        path.join(process.cwd(), `/soap/Template.wsdl`),
+        "utf-8"
+      );
+      fs.writeFileSync(
+        path.join(process.cwd(), `/soap/SUService.wsdl`),
+        template.replace("127.0.0.1", ip)
+      );
+      await exec("pm2 restart all");
+      resolve(true);
+    } catch (e) {
+      reject(e);
+    }
   });
 };
 

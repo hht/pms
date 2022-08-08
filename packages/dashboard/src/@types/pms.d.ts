@@ -119,6 +119,12 @@ interface Component {
   };
 }
 
+interface NetworkConfig {
+  ip: string;
+  mask: number;
+  gateway: string;
+}
+
 interface Template {
   name: string;
   description: string;
