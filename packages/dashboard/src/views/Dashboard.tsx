@@ -62,6 +62,10 @@ const columns: ProColumns<Partial<Signal>>[] = [
     editable: false,
   },
   {
+    title: "采样点编码",
+    dataIndex: "code",
+  },
+  {
     title: "采样点顺序号",
     dataIndex: "index",
     valueType: "digit",

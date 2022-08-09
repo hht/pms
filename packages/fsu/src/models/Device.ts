@@ -249,15 +249,7 @@ export class IDevice {
           throw v;
         }
         for (const value of v) {
-          values.push({
-            ...value,
-            ...signals[value.id],
-            raw: value.raw,
-            value:
-              value.length === 1
-                ? value.enum[value.raw!]
-                : `${value.raw?.toFixed(2)}${value.unit}`,
-          });
+          values.push(value);
         }
       } catch (error: any) {
         const message = `采样失败(${command}) : ${
@@ -286,21 +278,27 @@ export class IDevice {
     if (errors.length === 0) {
       this.setStatus("工作正常");
     }
-
     const recieved = _.chain(values)
       .groupBy("code")
       .mapValues((values) =>
-        _.orderBy(values, ["name"]).map((value, index) => ({
-          ...value,
-          index: value.index || index + 1,
-          id: `${this.instance.code}-${this.instance.serial}-${
+        _.orderBy(values, ["command", "offset"]).map((value, index) => {
+          const id = `${this.instance.code}-${this.instance.serial}-${
             value.length === 1 ? 3 : 1
-          }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`,
-        }))
+          }-${value.code}-${_.padStart(`${index + 1}`, 3, "0")}`;
+          const merged = { ...value, ...signals[id] };
+          return {
+            ...merged,
+            index: value.index || index + 1,
+            id,
+            value:
+              value.length === 1
+                ? merged.enum[value.raw!]
+                : `${value.raw?.toFixed(2)}${value.unit}`,
+          };
+        })
       )
       .values()
       .flatten()
-      .orderBy("name")
       .value();
 
     SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
@@ -337,7 +335,7 @@ export class IDevice {
           .filter((it) => !!it.code)
           .groupBy("code")
           .mapValues((values) =>
-            _.orderBy(values, ["command", "offset"]).map((value, index) => ({
+            _.orderBy(values, ["name", "offset"]).map((value, index) => ({
               ...value,
               index,
               id: `${this.instance.code}-${this.instance.serial}-${
@@ -348,6 +346,7 @@ export class IDevice {
           )
           .values()
           .flatten()
+          .orderBy("name")
           .value() ?? [];
       return values;
     } catch (e: any) {
@@ -426,7 +425,7 @@ export class IDevice {
       this.instance.activite &&
       !prev.ignore &&
       prev.enabled &&
-      !prev.code.startsWith("X")
+      !["X", "Y", "Z"].includes(prev.code.substring(0, 1))
     ) {
       Events.emit(EVENT.VALUE_RECEIVED, {
         deviceId: this.instance.id,

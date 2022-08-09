@@ -39,6 +39,23 @@ export const SIGNAL_ENUM = {
   "274": "直流电压",
 };
 
+const EnumEditor: FC<{
+  value?: Object;
+  onChange?: (value: string) => void;
+}> = ({ value, onChange }) => {
+  const [v, updateV] = useState(JSON.stringify(value));
+  return (
+    <Input
+      value={v}
+      onChange={(e) => updateV(e.target.value)}
+      onBlur={() => {
+        const response = JSON.parse(v);
+        onChange?.(response);
+      }}
+    />
+  );
+};
+
 const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
   device,
   onRequest,
@@ -141,10 +158,18 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       editable: device?.controller === "环境监测" ? undefined : false,
     },
     {
-      title: "采样点正常值(信号量)",
+      title: "采样点正常值",
       dataIndex: "normalValue",
       valueType: "digit",
       editable: device?.controller === "环境监测" ? undefined : false,
+    },
+    {
+      title: "采样配置",
+      dataIndex: "enum",
+      editable: device?.controller === "环境监测" ? undefined : false,
+      renderFormItem: (_, { isEditable, record }, form) => {
+        return record?.length === 1 && isEditable ? <EnumEditor /> : "-";
+      },
     },
     {
       title: "告警抑制",
@@ -170,7 +195,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
       valueType: "switch",
       editable: false,
       render: (text, record, _, action) =>
-        record.code?.startsWith("X") ? (
+        ["X", "Y", "Z"].includes(record.code?.substring(0, 1) ?? "") ? (
           "未配置"
         ) : (
           <Switch

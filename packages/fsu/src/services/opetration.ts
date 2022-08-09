@@ -374,7 +374,7 @@ const getFTP: Operation = async () => {
 
 // 设置FTP参数
 const setFTP: Operation = async (UserName: string, Password: string) => {
-  // await changeFtpUser(UserName, Password);
+  await changeFtpUser(UserName, Password);
   const unit = await prisma.unit.update({
     data: {
       userName: UserName,
