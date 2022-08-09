@@ -50,7 +50,6 @@ export class IDevice {
             port
               .pipe(new InterByteTimeoutParser({ interval: 100 }))
               .on("data", (data: Buffer) => {
-                // console.log("串口返回", JSON.stringify(data));
                 useSerialPortStore.getState().update(this.instance.port, {
                   buffer: Buffer.concat([
                     useSerialPortStore.getState().ports[this.instance.port]
@@ -149,22 +148,6 @@ export class IDevice {
         }
       }, this.instance.timeout);
       // 发送命令
-      // console.log(
-      //   "发送命令",
-      //   this.instance.name,
-      //   command,
-      //   JSON.stringify(
-      //     this.assembleCommand(
-      //       Buffer.from(
-      //         (
-      //           this.configuration["命令列表"] as {
-      //             [key: string]: string | number[];
-      //           }
-      //         )[command]
-      //       )
-      //     )
-      //   )
-      // );
       useSerialPortStore.getState().ports[this.instance.port]?.port.write(
         this.assembleCommand(
           Buffer.from(
@@ -288,7 +271,7 @@ export class IDevice {
           const merged = { ...value, ...signals[id] };
           return {
             ...merged,
-            index: value.index || index + 1,
+            index: merged.index || index + 1,
             id,
             value:
               value.length === 1
