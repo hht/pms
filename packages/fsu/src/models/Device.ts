@@ -279,7 +279,7 @@ export class IDevice {
       this.setStatus("工作正常");
     }
     const recieved = _.chain(values)
-      .groupBy("code")
+      .groupBy((it) => `${it.code}-${it.length}`)
       .mapValues((values) =>
         _.orderBy(values, ["command", "offset"]).map((value, index) => {
           const id = `${this.instance.code}-${this.instance.serial}-${
@@ -333,7 +333,7 @@ export class IDevice {
       const values =
         _.chain(data)
           .filter((it) => !!it.code)
-          .groupBy("code")
+          .groupBy((it) => `${it.code}-${it.length}`)
           .mapValues((values) =>
             _.orderBy(values, ["name", "offset"]).map((value, index) => ({
               ...value,

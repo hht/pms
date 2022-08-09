@@ -4,7 +4,6 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["interactiveTransactions"]
-
 }
 
 datasource db {
@@ -54,7 +53,7 @@ model Device {
   id           Int      @id @default(autoincrement())
   resourceId   String   @default("")
   code         String
-  serial       String   
+  serial       String
   name         String
   controller   String   @default("")
   protocol     String   @default("")
@@ -97,7 +96,6 @@ model Signal {
   threshold        Float?  @default(0)
   thresholdPercent Float?  @default(0)
 
-
   startDelay Int?      @default(0)
   endDelay   Int?      @default(9)
   enabled    Boolean   @default(true)
@@ -109,7 +107,8 @@ model Signal {
 
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   deviceId Int
-  @@unique([deviceId, code, index])
+
+  @@unique([deviceId, code, index, length])
 }
 
 model History {
@@ -125,5 +124,4 @@ model Log {
   description String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
-
 }
