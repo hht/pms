@@ -9,6 +9,7 @@ import { EVENT } from "./enum";
 import { SocketServer } from "../services/socket";
 import dayjs from "dayjs";
 import { useSerialPortStore } from "../store";
+import { SETTINGS } from "../services";
 
 const SIMULATION_DATA_PATH: { [key: string]: string } = {
   交流屏模拟量: "./emulation/电总交流屏模拟量/",
@@ -129,6 +130,9 @@ export class IDevice {
    * @returns
    */
   protected getDeviceValue = (command: string) => {
+    if (SETTINGS.isConfiguring) {
+      return Promise.resolve([]);
+    }
     return new Promise((resolve, reject) => {
       // 根据设备超时时间读取缓冲区
       setTimeout(async () => {

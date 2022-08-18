@@ -2,17 +2,12 @@
  * 局站信息设置
  */
 import _ from "lodash";
-import { networkInterfaces } from "os";
 import { PrismaClient } from "@prisma/client";
 import { DEVICE_CODE } from "../models/enum";
 import dayjs from "dayjs";
-import { changeFtpUser } from "./system";
+import { changeFtpUser, getMacAddress, getNetworkAddress } from "./system";
 import { getSignalState } from "../utils";
-
-const getNetworkAddress = async () => {
-  const nets = networkInterfaces();
-  return nets["enp3s0"]?.[0]?.address;
-};
+import { recoverAlarms } from "./opetration";
 
 export const prisma = new PrismaClient({
   errorFormat: "minimal",
@@ -34,6 +29,7 @@ export const getUnit = async () => {
         id: 1,
         localAddress: (await getNetworkAddress()) ?? "",
         port: 21,
+        unitId: await getMacAddress(),
         manufacturer: "电服中心",
         unitVersion: "1.01",
         userName: "admin",
@@ -138,6 +134,17 @@ export const deleteDevice = async (id: number) => {
   const deleted = await prisma.device.delete({
     where: { id },
   });
+  const alarms = await prisma.alarm.findMany({
+    where: {
+      deviceId: `${deleted.code}${deleted.serial}`,
+      state: {
+        notIn: ["已清除", "已取消"],
+      },
+    },
+  });
+
+  await recoverAlarms(alarms, "设备已删除");
+
   // 如果设备删除成功则重置计划任务
   return deleted;
 };
@@ -157,35 +164,52 @@ export const getSignals = async (id: number) => {
  * 更新设备采样点信息
  */
 export const saveSignals = async (id: number, values: Signal[]) => {
-  const response = await prisma.$transaction(async (prisma) => {
-    await prisma.signal.deleteMany({
-      where: {
-        deviceId: id,
+  const signals = await prisma.signal.findMany({
+    where: {
+      deviceId: id,
+    },
+  });
+  const alarmIds = signals
+    .filter((it) => it.alarm)
+    .map((it) => it.alarm) as number[];
+  const alarms = await prisma.alarm.findMany({
+    where: {
+      id: {
+        in: alarmIds,
       },
-    });
-    for (const value of values) {
-      await prisma.signal.create({
-        data: {
-          ...(_.omit(value, ["enum", "deviceId", "updateAt"]) as Signal & {
-            raw: number;
-            value: string;
-            normalValue: number;
-            unit: string;
-            offset: number;
-          }),
-          enum: (value.enum
-            ? (JSON.stringify(value.enum) as string)
-            : null) as any,
-          device: {
-            connect: {
-              id,
-            },
+      state: {
+        notIn: ["已清除", "已取消"],
+      },
+    },
+  });
+  await recoverAlarms(alarms, "采样点已删除");
+  await prisma.signal.deleteMany({
+    where: {
+      deviceId: id,
+    },
+  });
+  for (const value of values) {
+    await prisma.signal.create({
+      data: {
+        ...(_.omit(value, ["enum", "deviceId", "updateAt"]) as Signal & {
+          raw: number;
+          value: string;
+          normalValue: number;
+          unit: string;
+          offset: number;
+        }),
+        enum: (value.enum
+          ? (JSON.stringify(value.enum) as string)
+          : null) as any,
+        device: {
+          connect: {
+            id,
           },
         },
-      });
-    }
-  });
-  return response;
+      },
+    });
+  }
+  return signals;
 };
 
 /**

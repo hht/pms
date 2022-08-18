@@ -111,6 +111,15 @@ const Widget: FC = () => {
       message.success("系统已重置");
     },
   });
+  const { run: getMac, loading: getting } = useRequest(
+    () => request<{ msg: string }>("/mac"),
+    {
+      manual: true,
+      onSuccess: ({ msg }) => {
+        Modal.info({ title: "当前网卡地址", content: msg });
+      },
+    }
+  );
   const formRef = useRef<ProFormInstance>();
 
   const proColumns: ProFormColumnsType<Unit>[] = [
@@ -237,6 +246,17 @@ const Widget: FC = () => {
     <>
       <Card
         extra={[
+          <Button
+            htmlType="button"
+            type="primary"
+            ghost
+            key="mac"
+            loading={getting}
+            style={{ marginRight: 20 }}
+            onClick={getMac}
+          >
+            获取MAC地址
+          </Button>,
           <Button
             htmlType="button"
             type="primary"

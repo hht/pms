@@ -133,7 +133,11 @@ const Devices: FC = () => {
             actionRef.current?.reload();
             return true;
           }}
-          trigger={<Button type="primary">编辑</Button>}
+          trigger={
+            <Button disabled={!isDebug} type="primary">
+              编辑
+            </Button>
+          }
         ></BetaSchemaForm>,
         <Fragment key="config">
           <Button
@@ -147,6 +151,7 @@ const Devices: FC = () => {
         </Fragment>,
         <Button
           key="delete"
+          disabled={!isDebug}
           danger
           onClick={() => {
             Modal.confirm({
@@ -391,7 +396,12 @@ const Devices: FC = () => {
                 return true;
               }}
               trigger={
-                <Button key="button" icon={<PlusOutlined />} type="primary">
+                <Button
+                  disabled={!isDebug}
+                  key="button"
+                  icon={<PlusOutlined />}
+                  type="primary"
+                >
                   新建
                 </Button>
               }

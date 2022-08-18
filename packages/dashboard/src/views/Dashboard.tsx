@@ -71,7 +71,7 @@ const columns: ProColumns<Partial<Signal>>[] = [
     valueType: "digit",
   },
   {
-    title: "采样点正常值(信号量)",
+    title: "采样点正常值",
     dataIndex: "normalValue",
     valueType: "digit",
   },

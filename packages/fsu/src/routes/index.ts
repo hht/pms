@@ -10,12 +10,18 @@ import {
   upsertUnit,
   upsertFTP,
 } from "../services/orm";
-import { ExpressAsyncNext } from "../utils";
-import { changeFtpUser, configNetwork, getPorts } from "../services/system";
-import { DEVICES, scheduleCron, SETTINGS } from "../services";
+import { ExpressAsyncNext, wait } from "../utils";
+import {
+  changeFtpUser,
+  configNetwork,
+  getMacAddress,
+  getPorts,
+} from "../services/system";
+import { DEVICES, resetDevices, scheduleJob, SETTINGS } from "../services";
 import { handleInvoke } from "../services/soap";
 import { Events } from "../services/rx";
 import { EVENT } from "../models/enum";
+import { recoverAlarms } from "../services/opetration";
 
 /**
  * 局站相关信息接口
@@ -41,7 +47,13 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const { isDebug } = req.body;
       SETTINGS.isDebug = isDebug;
-      await scheduleCron();
+      SETTINGS.isRunning = false;
+      while (!SETTINGS.isStopped) {
+        await wait(1000);
+      }
+      if (!isDebug) {
+        scheduleJob();
+      }
       res.json({ isDebug });
     })
   );
@@ -50,7 +62,8 @@ export const getDeviceRoutes = (app: Express) => {
     "/unit",
     ExpressAsyncNext(async (req, res) => {
       const unit = await upsertUnit(req.body);
-      scheduleCron();
+      await resetDevices();
+      scheduleJob();
       res.json(unit);
     })
   );
@@ -80,7 +93,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/device",
     ExpressAsyncNext(async (req, res) => {
       const devices = await upsertDevice(req.body);
-      scheduleCron();
+      await resetDevices();
       res.json(devices);
     })
   );
@@ -90,7 +103,7 @@ export const getDeviceRoutes = (app: Express) => {
     ExpressAsyncNext(async (req, res) => {
       const { id } = req.params;
       const devices = await deleteDevice(parseInt(id));
-      scheduleCron();
+      await resetDevices();
       res.json(devices);
     })
   );
@@ -119,7 +132,7 @@ export const getDeviceRoutes = (app: Express) => {
       }
       if (values) {
         await saveSignals(device, values);
-        scheduleCron();
+        await resetDevices();
         res.json({ code: true, msg: "保存成功" });
       }
     })
@@ -129,15 +142,30 @@ export const getDeviceRoutes = (app: Express) => {
     "/boot",
     ExpressAsyncNext(async (req, res) => {
       Events.emit(EVENT.DISCONNECTED, "正在连接服务器");
+      const alarms = await prisma.alarm.findMany({
+        where: {
+          state: {
+            notIn: ["已清除", "已取消"],
+          },
+        },
+      });
+      await recoverAlarms(alarms, "采集器重置");
       await prisma.alarm.deleteMany();
-      await prisma.history.deleteMany();
       await prisma.signal.updateMany({
         data: {
           alarm: null,
         },
       });
-      await scheduleCron();
+      await resetDevices();
       res.json({ code: true, msg: "系统已重启" });
+    })
+  );
+
+  app.post(
+    "/mac",
+    ExpressAsyncNext(async (req, res) => {
+      const mac = await getMacAddress();
+      res.json({ code: true, msg: mac });
     })
   );
 
@@ -160,6 +188,19 @@ export const getDeviceRoutes = (app: Express) => {
   app.post(
     "/alarm",
     ExpressAsyncNext(async (req, res) => {
+      const alarms = await prisma.alarm.findMany({
+        where: {
+          state: {
+            notIn: ["已清除", "已取消"],
+          },
+        },
+      });
+      await recoverAlarms(alarms, "人工重置告警");
+      await prisma.signal.updateMany({
+        data: {
+          alarm: null,
+        },
+      });
       await prisma.alarm.deleteMany();
       await prisma.history.deleteMany();
       res.json({});

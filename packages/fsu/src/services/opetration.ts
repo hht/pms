@@ -265,10 +265,11 @@ const setParameters: Operation = async (devices: SoapDevice[]) => {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        deviceId_code_index: {
+        deviceId_code_index_length: {
           code: signal.code!,
           index: signal.index!,
           deviceId: signal.deviceId!,
+          length: signal.length ?? 1,
         },
       },
     });
@@ -356,6 +357,17 @@ export const sendAlarm = async (data: any[]) => {
       });
     });
   }
+};
+
+export const recoverAlarms = async (data: Alarm[], description: string) => {
+  await prisma.alarm.deleteMany({
+    where: {
+      id: {
+        in: data.map((it) => it.id),
+      },
+    },
+  });
+  await sendAlarm(data.map((it) => encodeAlarm({ ...it, description }, "END")));
 };
 
 // 获取FTP参数
@@ -531,10 +543,11 @@ const setAlarmProperties: Operation = async (devices: SoapDevice[]) => {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        deviceId_code_index: {
+        deviceId_code_index_length: {
           code: signal.code!,
           index: signal.index!,
           deviceId: signal.deviceId!,
+          length: signal.length ?? 1,
         },
       },
     });

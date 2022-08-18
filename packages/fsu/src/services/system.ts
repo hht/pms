@@ -10,6 +10,7 @@ import { EVENT } from "../models/enum";
 import compressing from "compressing";
 import fs, { watch, unlink } from "fs";
 import path from "path";
+import { networkInterfaces } from "os";
 
 const BASE_DIR = "/opt/node/pms";
 
@@ -202,4 +203,36 @@ export const watchUpdate = async () => {
       }
     }
   );
+};
+
+/**
+ * 获取网卡地址
+ * @returns
+ */
+export const getNetworkAddress = async () => {
+  const nets = networkInterfaces();
+  return nets["enp3s0"]?.[0]?.address;
+};
+
+/**
+ * 获取MAC地址
+ * @returns
+ */
+export const getMacAddress = async () => {
+  const { exec } = require("child_process");
+  return new Promise<string>(async (resolve) => {
+    const { stdout } = await exec("ip -o link show enp3s0");
+    stdout.on("data", async (data: any) => {
+      if (data) {
+        const nc = data.toString();
+        resolve(
+          /(link\/ether\s+)(\S*)(\s+)/
+            .exec(nc)?.[2]
+            ?.split(":")
+            .join("")
+            .toUpperCase() ?? ""
+        );
+      }
+    });
+  });
 };
