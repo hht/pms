@@ -276,6 +276,7 @@ export class IDevice {
           return {
             ...merged,
             index: merged.index || index + 1,
+            raw: value.raw,
             id,
             value:
               value.length === 1
