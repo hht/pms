@@ -139,7 +139,6 @@ const Dashboard: FC = () => {
       </Card>
     );
   }
-  console.log(devices);
   return (
     <>
       {_.values(devices).map((device) => (

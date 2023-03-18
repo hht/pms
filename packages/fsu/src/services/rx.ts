@@ -11,8 +11,9 @@ import {
   sendLocalData,
   setAnalogValues,
   setDigitalValues,
+  getIdentity,
 } from "./opetration";
-import { getIdentity, getSignalState } from "../utils";
+import { getSignalState } from "../utils";
 export class Events {
   static events: EventEmitter = new EventEmitter();
   static emit(event: string, data: any) {
@@ -27,7 +28,7 @@ const valueChanged = (data: Value) => {
   }
   // 如果已到采样间隔时间，则发送采样消息,默认10分钟
   if (
-    (data.interval || 10) * 60 +
+    (data.interval || 10) +
       dayjs(data.reportAt || "1970-01-01 12:00:00").unix() <
     dayjs().unix()
   ) {
@@ -56,7 +57,7 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
     if (valueChanged(recieved)) {
       updated.reportAt = dayjs().toDate();
       Events.emit(
-        recieved.length === 1
+        recieved.type !== 1
           ? EVENT.DIGITAL_VALIE_CHANGED
           : EVENT.ANALOG_VALUE_CHANGED,
         data
@@ -74,12 +75,12 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
       },
     });
 
-    // 采样点告警处理
+    //采样点告警处理
     const prevState = getSignalState(recieved, recieved.prev);
     const currentState = getSignalState(recieved, recieved.raw!);
     // 如果是模拟量且状态发生变化
     if (
-      recieved.length !== 1 &&
+      recieved.type === 1 &&
       (prevState !== currentState ||
         (currentState !== "00" && !recieved.alarm) ||
         (currentState === "00" && recieved.alarm))
@@ -88,7 +89,7 @@ const valueRecieved$ = fromEvent(Events.events, EVENT.VALUE_RECEIVED).subscribe(
     }
     // 如果是信号量且有正常值且值发生变化
     if (
-      recieved.length === 1 &&
+      recieved.type !== 1 &&
       _.isNumber(recieved.normalValue) &&
       (recieved.prev !== recieved.raw ||
         (currentState !== "00" && !recieved.alarm) ||
@@ -189,7 +190,6 @@ const stateChanged$ = fromEvent(Events.events, EVENT.ALARM_CHANGED).subscribe(
       SIGNAL_STATE,
       Value
     ];
-
     // 当前状态为正常，取消告警
     if (currentState === "00" && recieved.alarm) {
       // 发送告警清除消息
@@ -245,7 +245,7 @@ const errorOccured$ = fromEvent(Events.events, EVENT.ERROR_LOG).subscribe(
 
 // 中断后重新连接,间隔60秒
 const reconnect$ = fromEvent(Events.events, EVENT.DISCONNECTED)
-  .pipe(windowTime(10 * 1000), map(toArray()), mergeAll())
+  .pipe(windowTime(60 * 1000), map(toArray()), mergeAll())
   .subscribe(async (data) => {
     if (data.length) {
       try {

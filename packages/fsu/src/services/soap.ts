@@ -28,7 +28,7 @@ const parser = new soap.WSDL(
 
 const getRequest = (command: string, code: number | string, data: object) => {
   const unit = useUnitStore.getState();
-  return {
+  const request = {
     xmlData: `<?xml version="1.0" encoding="UTF-8"?>${parser.objectToXML(
       {
         Request: {
@@ -48,6 +48,7 @@ const getRequest = (command: string, code: number | string, data: object) => {
       "http://SUService.chinaunicom.com"
     )}`,
   };
+  return request;
 };
 
 const getResponse = async (
@@ -88,25 +89,23 @@ const getResponse = async (
 const SoapService = {
   SUServiceService: {
     SUService: {
-      invoke: async ({ xmlData }: { xmlData: string }) => {
+      invoke: async ({ xmlData }: { xmlData: any }) => {
+        const payload = xmlData.$value ?? xmlData;
         try {
-          if (_.isString(xmlData)) {
-            const payload = parser.xmlToObject(xmlData) as SoapRequest;
-            const [command, code, data] = await handleRequest(payload);
+          if (_.isString(payload)) {
+            const [command, code, data] = await handleRequest(
+              parser.xmlToObject(payload) as SoapRequest
+            );
             return await getResponse(command, code, data);
           } else {
-            const [command, code, data] = await handleRequest(xmlData);
+            const [command, code, data] = await handleRequest(payload);
             return await getResponse(command, code, data);
           }
         } catch (e: any) {
           throw {
             Fault: {
-              Code: {
-                Value: 500,
-              },
-              Reason: {
-                Text: e.message,
-              },
+              faultcode: 500,
+              faultstring: e.message,
             },
           };
         }
@@ -149,7 +148,7 @@ export const getEndpoint = async (ip?: string[]) => {
         const client = attempt(
           async () =>
             await soap.createClientAsync(
-              `http://${address}:8081/services/SCService?wsdl`,
+              `http://${address}/services/SCService?wsdl`,
               wsdlOptions
             ),
           { timeout: 5000, maxAttempts: 3 }
@@ -181,8 +180,9 @@ const invoke = async ([command, code, data]: [
       (error, result, raw) => {
         try {
           if (error) {
+            console.log(error.root);
             throw (
-              error.root?.Envelope.Body.Fault?.Reason?.Text ??
+              error.root?.Envelope.Body.Fault?.faultstring ??
               error.message ??
               error
             );
@@ -236,7 +236,7 @@ export class SoapClient {
           });
       })
       .catch((error) => {
-        console.log(`${command}指令执行失败`, error.message);
+        console.log(`${command}指令执行失败`, error.message ?? error);
         throw error;
       });
   }

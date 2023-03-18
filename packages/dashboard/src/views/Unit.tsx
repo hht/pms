@@ -160,6 +160,7 @@ const Widget: FC = () => {
         {
           title: "局站端口",
           dataIndex: "port",
+          valueType: "digit",
           width: "s",
           formItemProps: {
             rules: [

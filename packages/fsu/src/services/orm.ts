@@ -8,6 +8,8 @@ import dayjs from "dayjs";
 import { changeFtpUser, getMacAddress, getNetworkAddress } from "./system";
 import { getSignalState } from "../utils";
 import { recoverAlarms } from "./opetration";
+import { IDevice } from "../models/Device";
+export const DEVICES: IDevice[] = [];
 
 export const prisma = new PrismaClient({
   errorFormat: "minimal",
@@ -50,10 +52,7 @@ export const upsertUnit = async (unit: Unit) => {
   const updated = unit.id
     ? await prisma.unit.update({
         where: { id: unit.id },
-        data: _.omitBy(
-          _.omit(unit, ["userName", "password", "localAddress", "port"]),
-          _.isUndefined
-        ),
+        data: _.omitBy(_.omit(unit, ["userName", "password"]), _.isUndefined),
       })
     : await prisma.unit.create({
         data: unit,
@@ -119,7 +118,7 @@ export const upsertDevice = async (device: Device) => {
   }
   return await prisma.device.create({
     data: {
-      ..._.omit(device, "id"),
+      ..._.omit(device, ["id", "signals"]),
       productionAt: dayjs(device.productionAt).toDate(),
       code,
     },
@@ -230,7 +229,7 @@ export const updateSignal = async (value: Signal) => {
 export const encodeDevice = async ({
   d,
   filter = (signal: Signal) => true,
-  autoFill,
+  autoFill = true,
 }: {
   d: SoapDevice;
   filter: (signal: Signal) => boolean;
@@ -248,6 +247,7 @@ export const encodeDevice = async ({
     },
   });
   if (device) {
+    const signals = _.isArray(d.Signal) ? d.Signal : d.Signal ? [d.Signal] : [];
     return {
       attributes: {
         ...d.attributes,
@@ -264,10 +264,8 @@ export const encodeDevice = async ({
           : {}),
       },
       Signal: device.signals.filter((it) =>
-        d.Signal
-          ? d.Signal.map((s) => s.attributes.Id).includes(
-              encodeSignalId(it as Signal)
-            )
+        signals.length
+          ? signals.map((s) => s.attributes.Id).includes(it.id)
           : filter(it as Signal)
       ),
     };
@@ -278,13 +276,30 @@ export const encodeDevice = async ({
 };
 
 export const encodeDevices: (
-  devices: SoapDevice[],
+  devices: SoapDevice[] | SoapDevice,
   filter: (signal: Signal) => boolean,
   mapper: (signal: Signal) => { [key: string]: string | number | null },
   autoFill?: boolean
 ) => Promise<any> = async (devices, filter, mapper, autoFill = false) => {
+  const _devices = devices
+    ? _.isArray(devices)
+      ? devices
+      : [devices]
+    : (
+        await prisma.device.findMany({
+          include: { signals: false },
+        })
+      ).map((it) => ({
+        attributes: {
+          Id: `${it.code}${it.serial}`,
+          Rid: it.resourceId,
+          DeviceVender: it.manufacturer,
+          DeviceType: it.model,
+          BatchNo: "",
+        },
+      }));
   const response = await Promise.all(
-    devices?.map(async (it) => await encodeDevice({ d: it, filter, autoFill }))
+    _devices?.map(async (it) => await encodeDevice({ d: it, filter, autoFill }))
   );
   return {
     DeviceList: {
@@ -293,7 +308,7 @@ export const encodeDevices: (
         Signal: it?.Signal?.map((it) => {
           return {
             attributes: {
-              Id: encodeSignalId(it as Signal),
+              Id: it.id,
               ...mapper(it as Signal),
             },
           };
@@ -316,26 +331,32 @@ export const encodeSignalId = (signal: Signal, withState = false) => {
 };
 
 export const decodeDevices: (
-  devices: SoapDevice[]
+  devices: SoapDevice[] | SoapDevice
 ) => Promise<Partial<Signal & { deviceId: number }>[]> = async (devices) => {
   const response = [];
-  for (const device of devices) {
+  const devs = _.isArray(devices) ? devices : [devices];
+  for (const device of devs) {
     const dev = await prisma.device.findFirst({
       where: {
         code: device.attributes.Id.substring(0, 3),
         serial: device.attributes.Id.substring(3, 5),
       },
     });
+    const signals = _.isArray(device.Signal)
+      ? device.Signal
+      : device.Signal
+      ? [device.Signal]
+      : [];
     response.push(
-      ...(device.Signal?.map((signal) => {
+      ...(signals?.map((signal) => {
         const [a, b, c, d, e, f, g, h, i, j, k, l] =
           signal.attributes.Id.split("");
         return _.omitBy(
           {
-            id: `${a}${b}${c}-${k}${l}-${d}-${e}${f}${g}-${h}${i}${j}`,
+            id: signal.attributes.Id,
             deviceId: dev?.id,
-            code: `${e}${f}${g}`,
-            index: parseInt(`${h}${i}${j}`, 10),
+            code: `${a}${b}${c}${d}${e}${f}${g}${h}${i}`,
+            index: parseInt(`${j}${k}${l}`, 10),
             ..._.mapValues(
               {
                 raw: signal.attributes.SetValue,

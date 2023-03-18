@@ -1,3 +1,5 @@
+import { AirConditioner } from "./AirConditioner";
+import { Ammeter } from "./Ammeter";
 import { Environment } from "./Environment";
 import { Temprature } from "./Temprature";
 import { YDT } from "./YDT";
@@ -19,6 +21,18 @@ export const bootstrapDevice = async (device: Device) => {
     switch (device.protocol) {
       default:
         return new Environment(device);
+    }
+  }
+  if (device.controller === "单元式空调") {
+    switch (device.protocol) {
+      default:
+        return new AirConditioner(device);
+    }
+  }
+  if (device.controller === "智能电表") {
+    switch (device.protocol) {
+      default:
+        return new Ammeter(device);
     }
   }
   return null;

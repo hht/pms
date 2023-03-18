@@ -25,6 +25,10 @@ const getModelList = (controller: string) => {
       return ["TH-01"];
     case "环境监测":
       return ["PSX-01"];
+    case "单元式空调":
+      return ["英维柯Cybermate780"];
+    case "智能电表":
+      return ["安科瑞三相多功能表"];
     default:
       return [];
   }
@@ -240,6 +244,8 @@ const Devices: FC = () => {
         组合开关电源: "组合开关电源",
         智能温湿度: "智能温湿度",
         环境监测: "环境监测",
+        单元式空调: "单元式空调",
+        智能电表: "智能电表",
       },
       formItemProps: {
         rules: [

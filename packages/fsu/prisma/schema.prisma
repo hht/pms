@@ -79,6 +79,7 @@ model Signal {
   id               String  @id @unique
   name             String
   code             String
+  type             Int    @default(1)
   index            Int
   raw              Float?
   value            String
@@ -95,6 +96,7 @@ model Signal {
   lowerMajorLimit  Float?
   threshold        Float?  @default(0)
   thresholdPercent Float?  @default(0)
+  ratio            Float   @default(1)
 
   startDelay Int?      @default(0)
   endDelay   Int?      @default(9)

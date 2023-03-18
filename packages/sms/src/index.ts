@@ -61,7 +61,6 @@ app.post(
       default:
         break;
     }
-    console.log(message);
     await Device.send(message);
 
     res.json({ success: true });

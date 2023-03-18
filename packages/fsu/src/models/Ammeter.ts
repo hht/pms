@@ -4,15 +4,7 @@ import { IDevice } from "./Device";
 import { appendCrc16, checkCrc16 } from "../algorithm/CRC";
 import { SIGNAL_CODE } from "./enum";
 
-/**
- * 通用故障
- */
-const COMMON_STATE: { [key: number]: string } = {
-  0x01: "正常",
-  0x00: "故障",
-};
-
-class Environment extends IDevice {
+class Ammeter extends IDevice {
   /**
    * 生成符合Modbus命令
    * @param input 原始数据
@@ -42,46 +34,38 @@ class Environment extends IDevice {
 
   protected getParser = (command: string) => {
     switch (command) {
-      case "环境量":
-        return this.parse;
       default:
-        return () => [] as Signal[];
+        return this.parse(command);
     }
   };
+
   /**
-   * 获取环境数据
+   * 获取数据
    */
-  private parse = () => {
+  private parse = (command: string) => () => {
     const data = this.getPayload();
-    const values: number[] = [];
-    let offset = 0;
-    const length = data.readInt8(2);
-    offset += 3;
-    const address = data.readUInt16BE(offset);
-    values.push(address);
-    offset += 2;
-    for (let i = 0; i < 18; i += 1) {
-      values.push(data.readUInt16BE(offset) / 100);
-      offset += 2;
+    const length = data.readUInt8(2);
+    for (let i = 0; i < length; i += 2) {
+      console.log(data.length, length, {
+        [i]: `[${i / 2 + 1}]${data.readInt16BE(i + 3)}`,
+      });
     }
-    let switches = data.readUInt16BE(offset);
-    for (let i = 0; i < 16; i++) {
-      values.push(switches & 1);
-      switches = switches >> 1;
-    }
-    return (this.configuration["协议数据"] as Signal[])
-      .map((it, index) => ({
+    return (this.configuration[command] as Signal[])
+      .map((it) => ({
         ...it,
-        raw: values[index],
-        value: `${values[index]}${it.unit}`,
+        code: it.code ?? SIGNAL_CODE[it.name],
+        raw: data.readInt16BE((it.offset ?? 0) + 3) * (it.ratio ?? 1),
+        value: `${data.readInt16BE((it.offset ?? 0) + 3) * (it.ratio ?? 1)}${
+          it.unit
+        }`,
         threshold: 0,
         thresholdPercent: 0,
         startDelay: 0,
         endDelay: 0,
-        offset: index * 2,
+        offset: it.offset,
       }))
       .filter((it) => it.name !== "协议保留");
   };
 }
 
-export { Environment };
+export { Ammeter };

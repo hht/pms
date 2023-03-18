@@ -60,7 +60,7 @@ class Temprature extends IDevice {
     }
     return (this.configuration["模拟量"] as Signal[]).map((it, index) => ({
       ...it,
-      code: SIGNAL_CODE[it.name],
+      code: it.code,
       raw: values[index],
       value: `${values[index]}${it.unit}`,
       threshold: 0,

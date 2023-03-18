@@ -1,42 +1,54 @@
 /**
  * 采集程序
  */
-import { getUnit, prisma } from "./orm";
+import { DEVICES, getUnit, prisma } from "./orm";
 import _ from "lodash";
-import { IDevice } from "../models/Device";
 import { bootstrapDevice } from "../models/factory";
 import { SerialPort } from "serialport";
 import { Events } from "./rx";
 import { EVENT } from "../models/enum";
 import { useSerialPortStore, useUnitStore } from "../store";
 import { wait } from "../utils";
+import { bootstrap, dispose } from "./opetration";
+import { SoapClient } from "./soap";
 
-export const DEVICES: IDevice[] = [];
 export const SETTINGS = {
   isDebug: false,
   isRunning: true,
   isStopped: true,
   isConfiguring: false,
 };
-/**
- * 关闭串口
- * @param port 需要关闭的串口
- * @returns
- */
-const closePort = (port: SerialPort) =>
-  new Promise((resolve, reject) => {
-    if (port?.isOpen) {
-      port.close((error: Error | null) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(true);
-        }
-      });
-    } else {
-      resolve(true);
-    }
+
+// 重新获取数据
+export const refetchDevices = async () => {
+  // 读取FSU信息
+  const unit = await prisma.unit.findFirst({
+    where: {
+      id: 1,
+    },
   });
+  useUnitStore.setState(unit as unknown as Unit);
+
+  // 读取设备信息
+  DEVICES.length = 0;
+  const devices = await prisma.device.findMany({
+    include: {
+      signals: true,
+    },
+  });
+  for (const device of devices) {
+    const instance = await bootstrapDevice({
+      ...device,
+      signals: device.signals.map((signal) => ({
+        ...signal,
+        enum: signal.enum ? JSON.parse(signal.enum) : undefined,
+      })),
+    });
+    if (instance) {
+      DEVICES.push(instance);
+    }
+  }
+};
 
 /**
  * 重置系统
@@ -48,39 +60,17 @@ export const resetDevices = async () => {
     const ports = _.values(useSerialPortStore.getState().ports);
     for (const port of ports) {
       if (port.port?.isOpen) {
-        await closePort(port.port);
+        await new Promise(async (resolve) => {
+          await port.port.close(resolve);
+        });
       }
     }
     useSerialPortStore.setState({ ports: {} });
-
-    // 读取FSU信息
-    const unit = await prisma.unit.findFirst({
-      where: {
-        id: 1,
-      },
-    });
-    useUnitStore.setState(unit as unknown as Unit);
-
-    // 读取设备信息
-    DEVICES.length = 0;
-    const devices = await prisma.device.findMany({
-      include: {
-        signals: true,
-      },
-    });
-    for (const device of devices) {
-      const instance = await bootstrapDevice({
-        ...device,
-        signals: device.signals.map((signal) => ({
-          ...signal,
-          enum: signal.enum ? JSON.parse(signal.enum) : undefined,
-        })),
-      });
-      if (instance) {
-        DEVICES.push(instance);
-      }
-    }
+    await refetchDevices();
+    await SoapClient.invoke(await dispose());
+    await SoapClient.invoke(await bootstrap());
   } catch (e) {
+    console.log("重置系统失败：", e);
   } finally {
     SETTINGS.isConfiguring = false;
   }

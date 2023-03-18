@@ -7,6 +7,7 @@ type T = Pick<
   | "lowerMinorLimit"
   | "upperMajorLimit"
   | "upperMinorLimit"
+  | "type"
 >;
 
 export const EVENT = {
@@ -31,6 +32,7 @@ export const ALTERNATING_VOLTAGE: T = {
   lowerMajorLimit: 180,
   upperMinorLimit: 240,
   upperMajorLimit: 250,
+  type: 1,
 };
 
 export const ALTERNATING_CURRENT: T = {
@@ -41,6 +43,7 @@ export const ALTERNATING_CURRENT: T = {
   lowerMajorLimit: 48,
   upperMinorLimit: 54,
   upperMajorLimit: 56,
+  type: 1,
 };
 export const ALTERNATING_FREQUENCY: T = {
   name: "交流频率",
@@ -50,6 +53,7 @@ export const ALTERNATING_FREQUENCY: T = {
   lowerMajorLimit: 180,
   upperMinorLimit: 240,
   upperMajorLimit: 250,
+  type: 1,
 };
 
 export const DIRECT_VOLTAGE: T = {
@@ -60,6 +64,7 @@ export const DIRECT_VOLTAGE: T = {
   lowerMajorLimit: 48,
   upperMinorLimit: 54,
   upperMajorLimit: 56,
+  type: 1,
 };
 
 export const DIRECT_CURRENT: T = {
@@ -70,12 +75,15 @@ export const DIRECT_CURRENT: T = {
   lowerMajorLimit: 48,
   upperMinorLimit: 54,
   upperMajorLimit: 56,
+  type: 1,
 };
 
 export const DEVICE_CODE: { [key: string]: string } = {
   组合开关电源: "419",
   智能温湿度: "911",
   环境监测: "911",
+  单元式空调: "602",
+  智能电表: "406",
 };
 
 export const SIGNAL_CODE: { [key: string]: string } = {
@@ -120,6 +128,9 @@ export const SIGNAL_CODE: { [key: string]: string } = {
   门磁: "608",
   输入相电压: "104",
   蓄电池组总电压: "274",
+
+  // 空调
+  空调送风温度: "309",
 
   // 无规范定义数据，以X开始
   当前工作路号: "X01",

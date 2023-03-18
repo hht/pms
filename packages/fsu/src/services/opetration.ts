@@ -2,6 +2,7 @@ import _ from "lodash";
 import { useUnitStore } from "../store";
 import {
   decodeDevices,
+  DEVICES,
   encodeAlarm,
   encodeDevice,
   encodeDevices,
@@ -12,16 +13,27 @@ import dayjs from "dayjs";
 import { changeFtpUser, getSystemInfo } from "./system";
 import { SoapClient } from "./soap";
 import { SerialPort } from "serialport";
-import { getIdentity } from "../utils";
+import { refetchDevices } from ".";
 
 type Operation = (
   ...payload: any
 ) => Promise<[command: string, code: number | string, data: any]>;
 
-const getValues = (data: Signal[]) => {
+export const getIdentity = (data: Signal) => {
+  // @ts-ignore
+  const device = DEVICES.find((it) => it.instance.id === data.deviceId);
+  return {
+    deviceId: `${device?.instance.code}${device?.instance.serial}`,
+    deviceResourceId: device?.instance.resourceId ?? "",
+    signalId: data.id,
+  };
+};
+
+const getValues = (data: Signal[], type: number[]) => {
   if (data.length) {
     const valuesByDeviceId = _.chain(data)
-      .map((value) => ({ ...value, ...getIdentity(value) }))
+      .filter((it) => type.includes(it.type))
+      .map((value) => ({ ...value, ...getIdentity(value), signalId: value.id }))
       .groupBy("deviceId")
       .value();
     const updated = _.keys(valuesByDeviceId).map((key) => {
@@ -34,8 +46,7 @@ const getValues = (data: Signal[]) => {
         Signal: signals.map((it) => ({
           attributes: {
             Id: it.signalId,
-            RecordTime: dayjs(it.updatedAt).format("YYYY-MM-DD HH:mm:ss"),
-            Value: it.value,
+            Value: `${it.raw}`,
           },
         })),
       };
@@ -79,7 +90,7 @@ export const bootstrap: Operation = async () => {
           },
         })),
       },
-      SUVer: unit.version,
+      SUVer: "3.0",
     },
   ];
 };
@@ -91,7 +102,7 @@ export const dispose: Operation = async () => {
 
 // 设置采集服务器IP
 const setIP: Operation = async (ip: string) => {
-  await SoapClient.setClient(ip);
+  // await SoapClient.setClient(ip);
   return [
     "SET_IP_ACK",
     "106",
@@ -107,29 +118,33 @@ const getAnalogValues: Operation = async (devices: SoapDevice[]) => {
   return [
     "GET_AIDATA_ACK",
     "202",
-    await encodeDevices(
-      devices,
-      (it) => it.length !== 1,
-      (it) => ({ Value: `${it.value}` })
-    ),
+    {
+      ReportTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      Values: await encodeDevices(
+        devices,
+        (it) => it.type === 1,
+        (it) => ({ Value: `${it.value}` })
+      ),
+    },
   ];
 };
 
 // 上报遥测量信息
 export const setAnalogValues = async (data: any[]) => {
-  const values = getValues(data as Value[]);
+  const values = getValues(data as Value[], [1]);
   if (values.length) {
     SoapClient.invoke([
       "SEND_AIDATA",
       "203",
       {
+        ReportTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
         Values: {
           DeviceList: {
             Device: values,
           },
         },
       },
-    ]).catch(async () => {
+    ]).catch(async (e) => {
       await prisma.history.create({
         data: {
           code: 205,
@@ -145,22 +160,26 @@ const getDigitalValues: Operation = async (devices: SoapDevice[]) => {
   return [
     "GET_DIDATA_ACK",
     "302",
-    await encodeDevices(
-      devices,
-      (it) => it.length === 1,
-      (it) => ({ Value: `${it.value}` })
-    ),
+    {
+      ReportTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      Values: await encodeDevices(
+        devices,
+        (it) => [2, 3, 4].includes(it.type),
+        (it) => ({ Value: `${parseInt(`${it.value}`)}` })
+      ),
+    },
   ];
 };
 
 // 上报遥信量信息
 export const setDigitalValues = async (data: any[]) => {
-  const values = getValues(data as Value[]);
+  const values = getValues(data as Value[], [2, 3, 4]);
   if (values.length) {
     SoapClient.invoke([
       "SEND_DIDATA",
       "303",
       {
+        ReportTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
         Values: {
           DeviceList: {
             Device: values,
@@ -192,6 +211,26 @@ export const sendLocalData = async (command: string, code: number) => {
   if (history.length) {
     switch (code) {
       case 205:
+        SoapClient.invoke([
+          command,
+          code,
+          {
+            Values: {
+              DeviceList: {
+                Device: getValues(data as Value[], [1]),
+              },
+            },
+          },
+        ])
+          .then(async () => {
+            await prisma.history.deleteMany({
+              where: {
+                code,
+              },
+            });
+          })
+          .catch((e) => {});
+        return;
       case 305:
         SoapClient.invoke([
           command,
@@ -199,7 +238,7 @@ export const sendLocalData = async (command: string, code: number) => {
           {
             Values: {
               DeviceList: {
-                Device: getValues(data as Value[]),
+                Device: getValues(data as Value[], [2, 3, 4]),
               },
             },
           },
@@ -218,8 +257,10 @@ export const sendLocalData = async (command: string, code: number) => {
           command,
           code,
           {
-            TAalarmList: {
-              TAlarm: data,
+            Values: {
+              DeviceList: {
+                Device: getValues(data as Value[], [2, 4]),
+              },
             },
           },
         ])
@@ -232,6 +273,7 @@ export const sendLocalData = async (command: string, code: number) => {
           })
           .catch((e) => {});
         return;
+        return;
     }
   }
 };
@@ -241,20 +283,22 @@ const getParameters: Operation = async (devices: SoapDevice[]) => {
   return [
     "GET_AODATA_ACK",
     "402",
-    await encodeDevices(
-      devices,
-      (it) => true,
-      (it) => ({
-        SetValue: it.raw,
-        SHLimit: it.upperMajorLimit,
-        HLimit: it.upperMinorLimit,
-        LLimit: it.lowerMinorLimit,
-        SLLimit: it.lowerMajorLimit,
-        Threshold: it.threshold,
-        RelativeVal: it.thresholdPercent ?? null,
-        IntervalTime: it.interval ?? 0,
-      })
-    ),
+    {
+      Values: await encodeDevices(
+        devices,
+        (it) => it.type === 6,
+        (it) => ({
+          SetValue: it.raw,
+          SHLimit: it.upperMajorLimit ?? "",
+          HLimit: it.upperMinorLimit ?? "",
+          LLimit: it.lowerMinorLimit ?? "",
+          SLLimit: it.lowerMajorLimit ?? "",
+          Threshold: it.threshold ?? "",
+          RelativeVal: it.thresholdPercent ?? "",
+          IntervalTime: it.interval ?? "",
+        })
+      ),
+    },
   ];
 };
 
@@ -265,29 +309,54 @@ const setParameters: Operation = async (devices: SoapDevice[]) => {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        deviceId_code_index_length: {
-          code: signal.code!,
-          index: signal.index!,
-          deviceId: signal.deviceId!,
-          length: signal.length ?? 1,
-        },
+        id: signal.id,
       },
     });
+    const device = DEVICES.find((it) => it.instance.id === signal.deviceId);
+    if (signal.id && device && signal.raw) {
+      await device.setParameter(signal.id, signal.raw);
+    }
   }
+  await refetchDevices();
   return ["SET_AODATA_ACK", "404", { Result: 1 }];
 };
 
-// 获取所有监控点信息
-const getDevices: Operation = async (devices: SoapDevice[]) => {
+// 设置遥控量信息
+const setControllers: Operation = async (input: {
+  attributes: {
+    Id: string;
+  };
+}) => {
+  try {
+    const signal = await prisma.signal.findFirst({
+      where: {
+        id: input.attributes.Id,
+      },
+    });
+    const device = DEVICES.find((it) => it.instance.id === signal?.deviceId);
+    if (!device) {
+      throw new Error("设备未找到");
+    }
+    await device.setParameter(input.attributes.Id, 0);
+    return ["SET_DODATA_ACK", "504", { Result: 1 }];
+  } catch (e) {
+    return ["SET_DODATA_ACK", "504", { Result: 0 }];
+  }
+};
+
+// 获取遥控点信息
+const getControllers: Operation = async (devices: SoapDevice[]) => {
   return [
     "GET_DO_ACK",
     "502",
-    await encodeDevices(
-      devices,
-      (it) => true,
-      (it) => ({}),
-      true
-    ),
+    {
+      Values: await encodeDevices(
+        devices,
+        (it) => it.type === 5,
+        (it) => ({}),
+        true
+      ),
+    },
   ];
 };
 
@@ -451,7 +520,8 @@ const getTime: Operation = async () => {
             Id: `${it.code}${it.serial}`,
             Rid: it.resourceId,
             DeviceVendor: it.manufacturer,
-            DeviceType: it.controller,
+            DeviceType: it.model,
+            BatchNo: "",
           },
           Time: "FAILURE",
         })),
@@ -487,7 +557,9 @@ const getPorts: Operation = async () => {
     {
       PortList: {
         TPortInfo: ports.map((port, index) => {
-          const devicesInPort = devices.filter((it) => it.port === port.path);
+          const devicesInPort: Omit<Device, "signals">[] = devices.filter(
+            (it) => it.port === port.path
+          );
           return {
             attributes: {
               PortUsed: devicesInPort.length > 0 ? 1 : 0,
@@ -524,15 +596,18 @@ const getAlarmProperties: Operation = async (devices: SoapDevice[]) => {
   return [
     "GET_AlarmProperty_ACK",
     "1102",
-    await encodeDevices(
-      devices,
-      () => true,
-      (it) => ({
-        BDelay: it.startDelay,
-        EDelay: it.endDelay,
-      }),
-      true
-    ),
+    {
+      Values: await encodeDevices(
+        devices,
+        (it) => it.type === 4,
+        (it) => ({
+          BDelay: it.startDelay,
+          EDelay: it.endDelay,
+          Value: it.raw,
+        }),
+        true
+      ),
+    },
   ];
 };
 
@@ -543,15 +618,11 @@ const setAlarmProperties: Operation = async (devices: SoapDevice[]) => {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        deviceId_code_index_length: {
-          code: signal.code!,
-          index: signal.index!,
-          deviceId: signal.deviceId!,
-          length: signal.length ?? 1,
-        },
+        id: signal.id,
       },
     });
   }
+  await refetchDevices();
   return ["SET_AlarmProperty_ACK", "1104", { Result: 1 }];
 };
 
@@ -595,6 +666,9 @@ export const transmitLocalRecords: Operation = async (
               attributes: {
                 Id: it,
                 Rid: device?.resourceId,
+                DeviceVender: device?.manufacturer,
+                DeviceType: device?.model,
+                BatchNo: "",
               },
               Signal: values[it],
             };
@@ -618,7 +692,9 @@ export const handleRequest: Operation = async (command: SoapRequest) => {
     case "403":
       return await setParameters(command.Request.Info.DeviceList?.Device);
     case "501":
-      return await getDevices(command.Request.Info.DeviceList?.Device);
+      return await getControllers(command.Request.Info.DeviceList?.Device);
+    case "503":
+      return await setControllers(command.Request.Info.Signal);
     case "601":
       return await getCurrentAlarms(command.Request.Info.DeviceList?.Device);
     case "701":
@@ -644,11 +720,7 @@ export const handleRequest: Operation = async (command: SoapRequest) => {
       return await setAlarmProperties(command.Request.Info.DeviceList?.Device);
   }
 
-  return [
-    command.Request.PK_Type.Name,
-    command.Request.PK_Type.Code,
-    { xmlData: "无法解析的请求" },
-  ];
+  throw new Error("无法解析的命令编码");
 };
 
 export const handleResponse = async (code: string | number, response: any) => {
@@ -693,6 +765,9 @@ export const handle: (method: string) => Promise<SoapParameter> = async (
                 attributes: {
                   Id: `${device.code}${device.serial}`,
                   Rid: device?.resourceId,
+                  DeviceVender: device.manufacturer,
+                  DeviceType: device.model,
+                  BatchNo: "",
                 },
                 Signal:
                   Math.random() < 0.5
@@ -719,6 +794,9 @@ export const handle: (method: string) => Promise<SoapParameter> = async (
                 attributes: {
                   Id: `${device.code}${device.serial}`,
                   Rid: device?.resourceId,
+                  DeviceVender: device.manufacturer,
+                  DeviceType: device.model,
+                  BatchNo: "",
                 },
                 Signal:
                   Math.random() < 0.5
@@ -745,6 +823,9 @@ export const handle: (method: string) => Promise<SoapParameter> = async (
                 attributes: {
                   Id: `${device.code}${device.serial}`,
                   Rid: device?.resourceId,
+                  DeviceVender: device.manufacturer,
+                  DeviceType: device.model,
+                  BatchNo: "",
                 },
                 Signal:
                   Math.random() < 0.5

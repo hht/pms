@@ -52,7 +52,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
           ...state.devices,
           [device.deviceId]: {
             ...device,
-            values: _.orderBy(device.values, ["command", "offset"]),
+            values: _.orderBy(device.values, ["command", "code"]),
           },
         };
       })

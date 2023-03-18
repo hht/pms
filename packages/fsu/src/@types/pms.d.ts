@@ -32,6 +32,7 @@ interface Device {
   code: string;
   serial: string;
   baudRate: number;
+  version: string;
   timeout: number;
   updatedAt: Date | null;
   productionAt: Date | null;
@@ -115,6 +116,8 @@ interface Signal {
   reportAt: Date | null;
   interval?: number;
   updatedAt?: Date | string;
+  type: number;
+  ratio: number;
 }
 interface Component {
   name: string;
@@ -175,22 +178,39 @@ type SoapDevice = {
   attributes: {
     Id: string;
   };
-  Signal?: {
-    attributes: {
-      Id: string;
-      Value?: string;
-      SetValue?: string;
-      SHLimit?: string;
-      HLimit?: string;
-      LLimit?: string;
-      SLLimit?: string;
-      Threshold?: string;
-      RelativeVal?: string;
-      IntervalTime?: string;
-      BDelay?: string;
-      EDelay?: string;
-    };
-  }[];
+  Signal?:
+    | {
+        attributes: {
+          Id: string;
+          Value?: string;
+          SetValue?: string;
+          SHLimit?: string;
+          HLimit?: string;
+          LLimit?: string;
+          SLLimit?: string;
+          Threshold?: string;
+          RelativeVal?: string;
+          IntervalTime?: string;
+          BDelay?: string;
+          EDelay?: string;
+        };
+      }[]
+    | {
+        attributes: {
+          Id: string;
+          Value?: string;
+          SetValue?: string;
+          SHLimit?: string;
+          HLimit?: string;
+          LLimit?: string;
+          SLLimit?: string;
+          Threshold?: string;
+          RelativeVal?: string;
+          IntervalTime?: string;
+          BDelay?: string;
+          EDelay?: string;
+        };
+      };
 };
 
 type SIGNAL_STATE = "00" | "01" | "02" | "03" | "04" | "05";

@@ -260,12 +260,11 @@ class YDT extends IDevice {
         const customCount = data.readUInt8(offset);
         offset += 1;
         const customPoints = (this.configuration["自定义交流屏模拟量"] ??
-          []) as Omit<Signal, "code">[];
+          []) as Signal[];
         for (let c = 0; c < customCount; c++) {
           if (customPoints[c]) {
             const value = data.readUInt8(offset);
             response.push({
-              code: SIGNAL_CODE[customPoints[c].name],
               ...customPoints[c],
               name: `交流屏#${i + 1}第${j + 1}路${customPoints[c].name}`,
               raw: value,
@@ -318,6 +317,7 @@ class YDT extends IDevice {
           {
             name: "空开状态",
             length: 1,
+            type: 2,
             enum: {
               0x00: "闭合",
               0x01: "断开",
@@ -372,6 +372,7 @@ class YDT extends IDevice {
           {
             name: "输入电压A",
             length: 1,
+            type: 4,
             enum: {
               ...ALTERNATING_ALARM_STATE,
               ...(this.configuration["交流屏告警状态"] as {
@@ -383,6 +384,7 @@ class YDT extends IDevice {
           {
             name: "输入电压B",
             length: 1,
+            type: 4,
             enum: {
               ...ALTERNATING_ALARM_STATE,
               ...(this.configuration["交流屏告警状态"] as {
@@ -394,6 +396,7 @@ class YDT extends IDevice {
           {
             name: "输入电压C",
             length: 1,
+            type: 4,
             enum: {
               ...ALTERNATING_ALARM_STATE,
               ...(this.configuration["交流屏告警状态"] as {
@@ -405,6 +408,7 @@ class YDT extends IDevice {
           {
             name: "输入频率",
             length: 1,
+            type: 4,
             enum: {
               ...ALTERNATING_ALARM_STATE,
               ...(this.configuration["交流屏告警状态"] as {
@@ -431,6 +435,7 @@ class YDT extends IDevice {
             {
               name: "融丝/开关",
               length: 1,
+              type: 4,
               enum: {
                 ...ALTERNATING_ALARM_STATE,
                 ...(this.configuration["交流屏告警状态"] as {
@@ -593,6 +598,7 @@ class YDT extends IDevice {
         {
           name: "开机/关机状态",
           length: 1,
+          type: 2,
           enum: POWER_STATE,
         },
         {
@@ -603,6 +609,7 @@ class YDT extends IDevice {
         {
           name: "浮充/均充/测试状态",
           length: 1,
+          type: 2,
           enum: CHARGING_STATE,
         },
       ]) {
@@ -651,6 +658,7 @@ class YDT extends IDevice {
         {
           name: "整流模块状态",
           length: 1,
+          type: 2,
           enum: COMMON_STATE,
           normalValue: 0x00,
         },
@@ -807,6 +815,7 @@ class YDT extends IDevice {
         {
           name: "直流电压",
           length: 1,
+          type: 4,
           enum: DIRECT_ALARM_STATE,
           normalValue: 0x00,
         },
@@ -828,6 +837,7 @@ class YDT extends IDevice {
           {
             name: "融丝/开关",
             length: 1,
+            type: 4,
             enum: {
               ...DIRECT_ALARM_STATE,
               ...(this.configuration["直流屏告警状态"] as {

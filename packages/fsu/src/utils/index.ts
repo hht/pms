@@ -320,11 +320,14 @@ export const soapLogger = (type: string, data: any) => {
 };
 
 export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
+  if (![1, 2, 3, 4].includes(data.type)) {
+    return "00";
+  }
   if (value === 0xffff) {
     return "05";
   }
   // 信号量并且有正常值
-  if (data.length === 1) {
+  if (data.type !== 1) {
     if (_.isUndefined(data.normalValue)) {
       return "00";
     }
@@ -343,21 +346,4 @@ export const getSignalState = (data: Signal, value: number): SIGNAL_STATE => {
     return "01";
   }
   return "00";
-};
-
-export const getIdentity = (data: Signal) => {
-  const [deviceCode, deviceSerial, signalType, signalCode, signalSerial] =
-    data.id.split("-");
-
-  return {
-    deviceId: `${deviceCode}${deviceSerial}`,
-    deviceResourceId: "",
-    signalId: `${deviceCode}${signalType}${
-      data.code || signalCode
-    }${getSignalState(data, data.raw!)}${
-      _.isNumber(data.index)
-        ? _.padStart(`${data.index}`, 3, "0")
-        : signalSerial
-    }`,
-  };
 };

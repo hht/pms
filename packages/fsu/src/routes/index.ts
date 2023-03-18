@@ -9,6 +9,7 @@ import {
   upsertDevice,
   upsertUnit,
   upsertFTP,
+  DEVICES,
 } from "../services/orm";
 import { ExpressAsyncNext, wait } from "../utils";
 import {
@@ -17,7 +18,7 @@ import {
   getMacAddress,
   getPorts,
 } from "../services/system";
-import { DEVICES, resetDevices, scheduleJob, SETTINGS } from "../services";
+import { resetDevices, scheduleJob, SETTINGS } from "../services";
 import { handleInvoke } from "../services/soap";
 import { Events } from "../services/rx";
 import { EVENT } from "../models/enum";

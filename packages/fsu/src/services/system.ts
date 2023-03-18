@@ -116,17 +116,17 @@ export const configNetwork = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const { exec } = require("child_process");
-      await exec("nmcli con mod enp3s0 autoconnect yes");
-      await wait(200);
-      await exec(`nmcli con mod enp3s0 ipv4.address ${ip}/${mask}`);
-      await wait(200);
-      await exec(`nmcli con mod enp3s0 ipv4.gateway ${gateway}`);
-      await wait(200);
-      await exec(`nmcli c reload`);
-      await wait(200);
-      await exec(`nmcli con up enp3s0`);
-      await wait(200);
+      // const { exec } = require("child_process");
+      // await exec("nmcli con mod enp3s0 autoconnect yes");
+      // await wait(200);
+      // await exec(`nmcli con mod enp3s0 ipv4.address ${ip}/${mask}`);
+      // await wait(200);
+      // await exec(`nmcli con mod enp3s0 ipv4.gateway ${gateway}`);
+      // await wait(200);
+      // await exec(`nmcli c reload`);
+      // await wait(200);
+      // await exec(`nmcli con up enp3s0`);
+      // await wait(200);
       const template = fs.readFileSync(
         path.join(process.cwd(), `/soap/Template.wsdl`),
         "utf-8"
@@ -135,7 +135,7 @@ export const configNetwork = async (
         path.join(process.cwd(), `/soap/SUService.wsdl`),
         template.replace("127.0.0.1", ip)
       );
-      await exec("pm2 restart all");
+      // exec("pm2 restart all");
       resolve(true);
     } catch (e) {
       reject(e);

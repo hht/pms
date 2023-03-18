@@ -262,5 +262,3 @@ const parseDirectValues = () => {
   }
   return response as Signal[];
 };
-
-console.log(parseDirectValues());
