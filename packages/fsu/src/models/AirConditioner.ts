@@ -60,6 +60,7 @@ class AirConditioner extends IDevice {
         value: `${data.readInt16BE((it.offset ?? 0) + 3) * (it.ratio ?? 1)}${
           it.unit
         }`,
+        deviceId: this.instance.deviceId,
         threshold: 0,
         thresholdPercent: 0,
         startDelay: 0,
@@ -68,9 +69,9 @@ class AirConditioner extends IDevice {
       }))
       .filter((it) => it.name !== "协议保留");
   };
-  public setParameter = async (id: string, value: number) => {
+  public setParameter = async (signalId: string, value: number) => {
     const buffer = await this.executeCommand(
-      this.assembleCommand(this.getCommand(id, value))
+      this.assembleCommand(this.getCommand(signalId, value))
     );
     console.log(buffer);
   };
@@ -93,6 +94,7 @@ class AirConditioner extends IDevice {
             : 0;
         return {
           ...it,
+          deviceId: this.instance.deviceId,
           code: it.code ?? SIGNAL_CODE[it.name],
           raw: value,
           value: `${value}${it.unit}`,

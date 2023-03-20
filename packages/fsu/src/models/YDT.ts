@@ -267,6 +267,7 @@ class YDT extends IDevice {
             response.push({
               ...customPoints[c],
               name: `交流屏#${i + 1}第${j + 1}路${customPoints[c].name}`,
+              deviceId: this.instance.deviceId,
               raw: value,
               offset,
             });
@@ -291,6 +292,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `交流屏#${i + 1}${signal.name}`,
           raw: data.readFloatLE(offset),
           offset,
@@ -328,6 +330,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[signal.name],
             ...signal,
+            deviceId: this.instance.deviceId,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             raw: value,
             offset,
@@ -345,6 +348,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[customPoints[c].name],
             ...customPoints[c],
+            deviceId: this.instance.deviceId,
             name: `交流屏#${i + 1}${customPoints[c].name}`,
             raw: value,
             offset,
@@ -422,6 +426,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[signal.name],
             ...signal,
+            deviceId: this.instance.deviceId,
             name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
             raw: value,
             offset,
@@ -449,6 +454,7 @@ class YDT extends IDevice {
             response.push({
               code: SIGNAL_CODE[signal.name],
               ...signal,
+              deviceId: this.instance.deviceId,
               name: `交流屏#${i + 1}第${j + 1}路${signal.name}`,
               raw: value,
               offset,
@@ -466,6 +472,7 @@ class YDT extends IDevice {
             response.push({
               code: SIGNAL_CODE[customPoints[c].name],
               ...customPoints[c],
+              deviceId: this.instance.deviceId,
               name: `交流屏#${i + 1}${customPoints[c].name}`,
               raw: value,
               offset,
@@ -513,6 +520,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `交流屏#${i + 1}${signal.name}`,
           raw: value,
           offset,
@@ -538,6 +546,7 @@ class YDT extends IDevice {
       response.push({
         code: SIGNAL_CODE[signal.name],
         ...signal,
+        deviceId: this.instance.deviceId,
         name: signal.name,
         raw: data.readFloatLE(offset),
         offset,
@@ -573,6 +582,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[customPoints[c].name],
             ...customPoints[c],
+            deviceId: this.instance.deviceId,
             name: `整流模块#${i + 1}${customPoints[c].name}`,
             raw: value,
             offset,
@@ -617,6 +627,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `整流模块#${i + 1}${signal.name}`,
           raw: value,
           offset,
@@ -633,6 +644,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[customPoints[c].name],
             ...customPoints[c],
+            deviceId: this.instance.deviceId,
             name: `整流模块#${i + 1}${customPoints[c].name}`,
             raw: value,
             offset,
@@ -667,6 +679,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `整流模块#${i + 1}${signal.name}`,
           raw: value,
           offset,
@@ -683,6 +696,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[customPoints[c].name],
             ...customPoints[c],
+            deviceId: this.instance.deviceId,
             name: `整流模块#${i + 1}${customPoints[c].name}`,
             raw: value,
             offset,
@@ -715,6 +729,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `直流屏#${i + 1}${signal.name}`,
           raw: data.readFloatLE(offset),
           offset,
@@ -728,6 +743,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[signal.name],
             ...signal,
+            deviceId: this.instance.deviceId,
             name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
             raw: data.readFloatLE(offset),
             offset,
@@ -742,6 +758,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[signal.name],
             ...signal,
+            deviceId: this.instance.deviceId,
             name: `直流屏#${i + 1}${signal.name}#${j + 1}`,
             raw: data.readFloatLE(offset),
             offset,
@@ -766,6 +783,7 @@ class YDT extends IDevice {
               response.push({
                 code: SIGNAL_CODE[signal.name],
                 ...signal,
+                deviceId: this.instance.deviceId,
                 name: `直流屏#${i + 1}第${j + 1}组蓄电池${signal.name}`,
                 raw: data.readFloatLE(offset),
                 offset,
@@ -787,6 +805,7 @@ class YDT extends IDevice {
             response.push({
               code: SIGNAL_CODE[signal.name],
               ...signal,
+              deviceId: this.instance.deviceId,
               name: `直流屏#${i + 1}${signal.name}`,
               raw: data.readFloatLE(offset),
               offset,
@@ -824,6 +843,7 @@ class YDT extends IDevice {
         response.push({
           code: SIGNAL_CODE[signal.name],
           ...signal,
+          deviceId: this.instance.deviceId,
           name: `整流模块#${i + 1}${signal.name}`,
           raw: value,
           offset,
@@ -851,6 +871,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[signal.name],
             ...signal,
+            deviceId: this.instance.deviceId,
             name: `直流屏#${i + 1}${signal.name}#${j + 1}`,
             raw: value,
             offset,
@@ -868,6 +889,7 @@ class YDT extends IDevice {
           response.push({
             code: SIGNAL_CODE[customPoints[c].name],
             ...customPoints[c],
+            deviceId: this.instance.deviceId,
             name: `直流屏#${i + 1}${customPoints[c].name}`,
             raw: value,
             offset,

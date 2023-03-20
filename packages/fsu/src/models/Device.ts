@@ -148,9 +148,11 @@ export class IDevice {
             reject();
           }
           this.buffer =
-            useSerialPortStore.getState().ports[this.instance.port].buffer;
+            useSerialPortStore.getState().ports[this.instance.port]?.buffer ??
+            Buffer.alloc(0);
           resolve(
-            useSerialPortStore.getState().ports[this.instance.port].buffer
+            useSerialPortStore.getState().ports[this.instance.port]?.buffer ??
+              Buffer.alloc(0)
           );
         }, this.instance.timeout);
         useSerialPortStore
@@ -210,7 +212,7 @@ export class IDevice {
    */
   public getDeviceValues = async (input?: string[]) => {
     await this.getCurrentState();
-    const signals = _.keyBy(this.instance.signals, "id");
+    const signals = _.keyBy(this.instance.signals, "signalId");
     const values: Signal[] = [];
     const errors: string[] = [];
     const current = _.chain(this.instance.signals)
@@ -251,13 +253,13 @@ export class IDevice {
       .groupBy((it) => `${it.code}`)
       .mapValues((values) =>
         _.orderBy(values, ["code"]).map((value, index) => {
-          const id = `${value.code}${_.padStart(`${index + 1}`, 3, "0")}`;
-          const merged = { ...value, ...signals[id] };
+          const signalId = `${value.code}${_.padStart(`${index + 1}`, 3, "0")}`;
+          const merged = { ...value, ...signals[signalId] };
           return {
             ...merged,
             index: merged.index || index + 1,
             raw: value.raw,
-            id,
+            signalId,
             value: [2, 3, 4].includes(value.type)
               ? merged?.enum?.[value.raw!] ??
                 `${value.raw?.toFixed(2)}${value.unit}`
@@ -271,7 +273,7 @@ export class IDevice {
 
     SocketServer.instance?.emit(EVENT.VALUE_RECEIVED, {
       device: this.instance.name,
-      deviceId: this.instance.id,
+      deviceId: this.instance.deviceId,
       status: this.status,
       values: recieved,
       errors,
@@ -281,7 +283,7 @@ export class IDevice {
     return { values: recieved, errors };
   };
 
-  public setParameter = async (id: string, value: number) => {};
+  public setParameter = async (signalId: string, value: number) => {};
   /**
    * 返回模拟数据
    * @param device 设备
@@ -294,9 +296,9 @@ export class IDevice {
    */
   protected updateDeviceValues = async (values: Signal[]) => {
     const signals = this.instance.signals;
-    const updated = _.keyBy(values, "id");
+    const updated = _.keyBy(values, "signalId");
     for (const signal of signals) {
-      this.updateDeviceValue(signal, updated[signal.id]);
+      this.updateDeviceValue(signal, updated[signal.signalId]);
     }
   };
   protected updateDeviceValue = async (prev: Signal, current: Signal) => {
@@ -312,7 +314,7 @@ export class IDevice {
       !["X", "Y", "Z"].includes(prev.code.substring(0, 1))
     ) {
       Events.emit(EVENT.VALUE_RECEIVED, {
-        deviceId: this.instance.id,
+        deviceId: this.instance.deviceId,
         prev: prev.raw,
         ...prev,
         raw: current.raw,
@@ -328,7 +330,7 @@ export class IDevice {
         status: message,
       },
       where: {
-        id: this.instance.id,
+        deviceId: this.instance.deviceId,
       },
     });
   };

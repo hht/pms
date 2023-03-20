@@ -113,7 +113,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/signal",
     ExpressAsyncNext(async (req, res) => {
       const { device } = req.body;
-      const singals = await getSignals(parseInt(device));
+      const singals = await getSignals(device);
       res.json(singals);
     })
   );
@@ -122,7 +122,7 @@ export const getDeviceRoutes = (app: Express) => {
     "/config",
     ExpressAsyncNext(async (req, res) => {
       const { device, commands, values } = req.body;
-      const instance = DEVICES.find((it) => it.instance.id === device);
+      const instance = DEVICES.find((it) => it.instance.deviceId === device);
       if (commands) {
         const { errors, values } =
           (await instance?.getDeviceValues(commands)) ?? {};

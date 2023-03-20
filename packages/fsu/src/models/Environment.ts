@@ -74,6 +74,7 @@ class Environment extends IDevice {
         ...it,
         raw: values[index],
         value: `${values[index]}${it.unit}`,
+        deviceId: this.instance.deviceId,
         threshold: 0,
         thresholdPercent: 0,
         startDelay: 0,

@@ -51,6 +51,7 @@ model Alarm {
 
 model Device {
   id           Int      @id @default(autoincrement())
+  deviceId     String   @unique
   resourceId   String   @default("")
   code         String
   serial       String
@@ -76,7 +77,8 @@ model Device {
 }
 
 model Signal {
-  id               String  @id @unique
+  id               Int  @id @default(autoincrement())
+  signalId         String
   name             String
   code             String
   type             Int    @default(1)
@@ -107,10 +109,10 @@ model Signal {
   interval   Int       @default(10)
   alarm      Int?
 
-  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  deviceId Int
+  device   Device @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  deviceId String
 
-  @@unique([deviceId, code, index, length])
+  @@unique([deviceId, signalId])
 }
 
 model History {

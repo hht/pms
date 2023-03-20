@@ -110,6 +110,7 @@ export const upsertDevice = async (device: Device) => {
           .omit("commands")
           .omitBy(_.isUndefined)
           .value(),
+        deviceId: `${code}${device.serial}`,
         code,
         productionAt: dayjs(device.productionAt).toDate(),
       },
@@ -119,6 +120,7 @@ export const upsertDevice = async (device: Device) => {
   return await prisma.device.create({
     data: {
       ..._.omit(device, ["id", "signals"]),
+      deviceId: `${code}${device.serial}`,
       productionAt: dayjs(device.productionAt).toDate(),
       code,
     },
@@ -151,10 +153,10 @@ export const deleteDevice = async (id: number) => {
 /**
  * 获取设备采样点信息
  */
-export const getSignals = async (id: number) => {
+export const getSignals = async (deviceId: string) => {
   return await prisma.signal.findMany({
     where: {
-      deviceId: id,
+      deviceId,
     },
   });
 };
@@ -162,10 +164,10 @@ export const getSignals = async (id: number) => {
 /**
  * 更新设备采样点信息
  */
-export const saveSignals = async (id: number, values: Signal[]) => {
+export const saveSignals = async (deviceId: string, values: Signal[]) => {
   const signals = await prisma.signal.findMany({
     where: {
-      deviceId: id,
+      deviceId,
     },
   });
   const alarmIds = signals
@@ -184,13 +186,17 @@ export const saveSignals = async (id: number, values: Signal[]) => {
   await recoverAlarms(alarms, "采样点已删除");
   await prisma.signal.deleteMany({
     where: {
-      deviceId: id,
+      deviceId,
     },
   });
+  console.log(values);
   for (const value of values) {
     await prisma.signal.create({
       data: {
-        ...(_.omit(value, ["enum", "deviceId", "updateAt"]) as Signal & {
+        ...(_.omit(value, ["id", "enum", "deviceId", "updateAt"]) as Omit<
+          Signal,
+          "id"
+        > & {
           raw: number;
           value: string;
           normalValue: number;
@@ -202,7 +208,7 @@ export const saveSignals = async (id: number, values: Signal[]) => {
           : null) as any,
         device: {
           connect: {
-            id,
+            deviceId,
           },
         },
       },
@@ -235,12 +241,9 @@ export const encodeDevice = async ({
   filter: (signal: Signal) => boolean;
   autoFill?: boolean;
 }) => {
-  const code = _.take(d.attributes.Id, 3).join("");
-  const serial = _.takeRight(d.attributes.Id, 2).join("");
   const device = await prisma.device.findFirst({
     where: {
-      code,
-      serial,
+      deviceId: d.attributes.Id,
     },
     include: {
       signals: true,
@@ -265,7 +268,7 @@ export const encodeDevice = async ({
       },
       Signal: device.signals.filter((it) =>
         signals.length
-          ? signals.map((s) => s.attributes.Id).includes(it.id)
+          ? signals.map((s) => s.attributes.Id).includes(it.signalId)
           : filter(it as Signal)
       ),
     };
@@ -308,7 +311,7 @@ export const encodeDevices: (
         Signal: it?.Signal?.map((it) => {
           return {
             attributes: {
-              Id: it.id,
+              Id: it.signalId,
               ...mapper(it as Signal),
             },
           };
@@ -318,30 +321,12 @@ export const encodeDevices: (
   };
 };
 
-export const encodeSignalId = (signal: Signal, withState = false) => {
-  const [deviceCode, deviceSN, signalType, signalCode, signalSN] =
-    signal.id.split("-");
-  return `${deviceCode}${signalType}${signal.code || signalCode}${
-    withState ? getSignalState(signal, signal.raw!) : "00"
-  }${_.padStart(
-    `${_.isNumber(signal.index) ? signal.index : signalSN}`,
-    3,
-    "0"
-  )}`;
-};
-
 export const decodeDevices: (
   devices: SoapDevice[] | SoapDevice
-) => Promise<Partial<Signal & { deviceId: number }>[]> = async (devices) => {
+) => Promise<Partial<Signal & { deviceId: string }>[]> = async (devices) => {
   const response = [];
   const devs = _.isArray(devices) ? devices : [devices];
   for (const device of devs) {
-    const dev = await prisma.device.findFirst({
-      where: {
-        code: device.attributes.Id.substring(0, 3),
-        serial: device.attributes.Id.substring(3, 5),
-      },
-    });
     const signals = _.isArray(device.Signal)
       ? device.Signal
       : device.Signal
@@ -353,8 +338,8 @@ export const decodeDevices: (
           signal.attributes.Id.split("");
         return _.omitBy(
           {
-            id: signal.attributes.Id,
-            deviceId: dev?.id,
+            signalId: signal.attributes.Id,
+            deviceId: device.attributes.Id,
             code: `${a}${b}${c}${d}${e}${f}${g}${h}${i}`,
             index: parseInt(`${j}${k}${l}`, 10),
             ..._.mapValues(

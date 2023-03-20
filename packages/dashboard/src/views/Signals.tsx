@@ -81,7 +81,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
         commands: _.keys(device!.commands).filter((it) =>
           commands.includes(it)
         ),
-        device: device!.id!,
+        device: device!.deviceId!,
       });
     },
     {
@@ -99,7 +99,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     () =>
       request("/config", {
         values: store.values,
-        device: device!.id!,
+        device: device!.deviceId!,
       }),
     {
       manual: true,
@@ -125,8 +125,7 @@ const Signals: FC<{ device?: Partial<Device>; onRequest: () => void }> = ({
     },
     {
       title: "监控点本地ID",
-      dataIndex: "id",
-      render: (id: any) => id.split("-").join(""),
+      dataIndex: "signalId",
       editable: false,
       width: 140,
     },

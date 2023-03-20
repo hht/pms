@@ -6,7 +6,6 @@ import {
   encodeAlarm,
   encodeDevice,
   encodeDevices,
-  encodeSignalId,
   prisma,
 } from "./orm";
 import dayjs from "dayjs";
@@ -21,11 +20,11 @@ type Operation = (
 
 export const getIdentity = (data: Signal) => {
   // @ts-ignore
-  const device = DEVICES.find((it) => it.instance.id === data.deviceId);
+  const device = DEVICES.find((it) => it.instance.deviceId === data.deviceId);
   return {
     deviceId: `${device?.instance.code}${device?.instance.serial}`,
     deviceResourceId: device?.instance.resourceId ?? "",
-    signalId: data.id,
+    signalId: data.signalId,
   };
 };
 
@@ -33,7 +32,11 @@ const getValues = (data: Signal[], type: number[]) => {
   if (data.length) {
     const valuesByDeviceId = _.chain(data)
       .filter((it) => type.includes(it.type))
-      .map((value) => ({ ...value, ...getIdentity(value), signalId: value.id }))
+      .map((value) => ({
+        ...value,
+        ...getIdentity(value),
+        signalId: value.signalId,
+      }))
       .groupBy("deviceId")
       .value();
     const updated = _.keys(valuesByDeviceId).map((key) => {
@@ -305,16 +308,22 @@ const getParameters: Operation = async (devices: SoapDevice[]) => {
 // 设置遥调量信息
 const setParameters: Operation = async (devices: SoapDevice[]) => {
   const updated = await decodeDevices(devices);
+  console.log(updated);
   for (const signal of updated) {
     await prisma.signal.update({
       data: _.omit(signal, "id") as any,
       where: {
-        id: signal.id,
+        deviceId_signalId: {
+          signalId: signal.signalId!,
+          deviceId: signal.deviceId!,
+        },
       },
     });
-    const device = DEVICES.find((it) => it.instance.id === signal.deviceId);
-    if (signal.id && device && signal.raw) {
-      await device.setParameter(signal.id, signal.raw);
+    const device = DEVICES.find(
+      (it) => it.instance.deviceId === signal.deviceId
+    );
+    if (signal.signalId && device && signal.raw) {
+      await device.setParameter(signal.signalId!, signal.raw);
     }
   }
   await refetchDevices();
@@ -323,23 +332,30 @@ const setParameters: Operation = async (devices: SoapDevice[]) => {
 
 // 设置遥控量信息
 const setControllers: Operation = async (input: {
-  attributes: {
-    Id: string;
+  DeviceId: string;
+  Signal: {
+    attributes: {
+      Id: string;
+    };
   };
 }) => {
   try {
     const signal = await prisma.signal.findFirst({
       where: {
-        id: input.attributes.Id,
+        deviceId: input.DeviceId,
+        signalId: input.Signal.attributes.Id,
       },
     });
-    const device = DEVICES.find((it) => it.instance.id === signal?.deviceId);
+    const device = DEVICES.find(
+      (it) => it.instance.deviceId === signal?.deviceId
+    );
     if (!device) {
       throw new Error("设备未找到");
     }
-    await device.setParameter(input.attributes.Id, 0);
+    await device.setParameter(input.Signal.attributes.Id, 0);
     return ["SET_DODATA_ACK", "504", { Result: 1 }];
   } catch (e) {
+    console.log(e);
     return ["SET_DODATA_ACK", "504", { Result: 0 }];
   }
 };
@@ -694,7 +710,7 @@ export const handleRequest: Operation = async (command: SoapRequest) => {
     case "501":
       return await getControllers(command.Request.Info.DeviceList?.Device);
     case "503":
-      return await setControllers(command.Request.Info.Signal);
+      return await setControllers(command.Request.Info);
     case "601":
       return await getCurrentAlarms(command.Request.Info.DeviceList?.Device);
     case "701":
@@ -737,305 +753,5 @@ export const handleResponse = async (code: string | number, response: any) => {
     }
   } catch (e) {
     throw e;
-  }
-};
-
-export const handle: (method: string) => Promise<SoapParameter> = async (
-  method: string
-) => {
-  let devices = [];
-  switch (method) {
-    case "登录":
-      return await bootstrap();
-    case "注销":
-      return await dispose();
-    case "设置IP":
-      return await Promise.resolve(["SET_IP", 105, { SCIP: "127.0.0.1" }]);
-    case "获取遥测量信息":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "GET_AIDATA",
-        201,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                  DeviceVender: device.manufacturer,
-                  DeviceType: device.model,
-                  BatchNo: "",
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "获取遥信量信息":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "GET_DIDATA",
-        301,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                  DeviceVender: device.manufacturer,
-                  DeviceType: device.model,
-                  BatchNo: "",
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "获取遥调量信息":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "GET_AODATA",
-        401,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                  DeviceVender: device.manufacturer,
-                  DeviceType: device.model,
-                  BatchNo: "",
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "设置遥调量信息":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "SET_AODATA",
-        403,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((it) => ({
-                        attributes: {
-                          Id: encodeSignalId(it as Signal),
-                          SetValue: it.raw,
-                          SHLimit:
-                            (it.upperMajorLimit ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          HLimit:
-                            (it.upperMinorLimit ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          LLimit:
-                            (it.lowerMinorLimit ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          SLLimit:
-                            (it.lowerMajorLimit ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          Threshold:
-                            (it.threshold ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          RelativeVal:
-                            (it.thresholdPercent ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          IntervalTime:
-                            (it.interval ?? 0) + (Math.random() < 0.5 ? 1 : -1),
-                        },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "获取遥控量报文":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return [
-        "GET_DO",
-        "501",
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ];
-    case "获取当前告警":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "GET_ALARM",
-        601,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "获取FTP参数":
-      return await Promise.resolve(["GET_FTP", 701, {}]);
-    case "设置FTP参数":
-      return await Promise.resolve([
-        "SET_FTP",
-        703,
-        {
-          UserName: "ftp",
-          Password: "ftp",
-        },
-      ]);
-
-    case "设置时间":
-      const [Y, M, D, H, m, s] = dayjs()
-        .format("YYYY-MM-DD-HH-mm-ss")
-        .split("-");
-      return [
-        "SET_TIME",
-        801,
-        {
-          // Time: {
-          //   Year: Y,
-          //   Month: M,
-          //   Day: D,
-          //   Hour: H,
-          //   Minute: m,
-          //   Second: s,
-          // },
-        },
-      ];
-    case "获取时间":
-      return ["GET_TIME", 803, {}];
-    case "获取端口信息":
-      return ["GET_SUPORT", 903, {}];
-    case "重启":
-      return ["SET_SUREBOOT", 1001, {}];
-
-    case "获取告警量设置":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "GET_AlarmProperty",
-        1101,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((signal) => ({
-                        attributes: { Id: encodeSignalId(signal as Signal) },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    case "设置告警量设置":
-      devices = await prisma.device.findMany({
-        include: { signals: true },
-      });
-      return await Promise.resolve([
-        "SET_AlarmProperty",
-        1103,
-        {
-          DeviceList: {
-            Device: devices.map((device) => {
-              return {
-                attributes: {
-                  Id: `${device.code}${device.serial}`,
-                  Rid: device?.resourceId,
-                },
-                Signal:
-                  Math.random() < 0.5
-                    ? device.signals.map((it) => ({
-                        attributes: {
-                          Id: encodeSignalId(it as Signal),
-                          BDelay:
-                            (it.startDelay ?? 0) +
-                            (Math.random() < 0.5 ? 1 : -1),
-                          EDelay:
-                            (it.endDelay ?? 0) + (Math.random() < 0.5 ? 1 : -1),
-                        },
-                      }))
-                    : [],
-              };
-            }),
-          },
-        },
-      ]);
-    default:
-      throw new Error("未知指令");
   }
 };

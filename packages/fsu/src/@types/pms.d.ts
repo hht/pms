@@ -23,6 +23,7 @@ interface Unit {
 
 interface Device {
   id: number;
+  deviceId: string;
   name: string;
   controller: string;
   resourceId: string;
@@ -88,7 +89,8 @@ interface Message {
 }
 
 interface Signal {
-  id: string;
+  id: number;
+  signalId: string;
   name: string;
   length: number;
   code: string;

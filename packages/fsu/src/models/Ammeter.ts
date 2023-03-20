@@ -58,6 +58,7 @@ class Ammeter extends IDevice {
         value: `${data.readInt16BE((it.offset ?? 0) + 3) * (it.ratio ?? 1)}${
           it.unit
         }`,
+        deviceId: this.instance.deviceId,
         threshold: 0,
         thresholdPercent: 0,
         startDelay: 0,
